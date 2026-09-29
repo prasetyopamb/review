@@ -695,7 +695,7 @@
   .step.current .bar{background:var(--accent);} .step.current b{color:var(--text);}
   .step.revise .bar{background:var(--st-revise-fg);}
   .step.stop .bar{background:var(--st-rejected-fg);}
-  @media (max-width:640px){ .step span.d{display:none;} .step b{font-size:11px;} }
+  @media (max-width:640px){ .step span.d{display:none;} .step b{font-size:var(--fs-12); line-height:1.25;} }
 
   .detail-grid{display:grid; grid-template-columns:minmax(0,1fr) 380px; gap:var(--sp-4); align-items:start;}
   .detail-aside{position:sticky; top:96px; display:flex; flex-direction:column; gap:var(--sp-4);}
@@ -706,7 +706,7 @@
   .kv dt{font-size:var(--fs-12); font-weight:600; color:var(--text-subtle); text-transform:uppercase; letter-spacing:.04em; display:flex; align-items:center; gap:6px;}
   .kv dd{margin:4px 0 0; line-height:1.6;}
   .kv .changed{box-shadow:inset 3px 0 0 var(--focus); padding-left:12px; margin-left:-12px;}
-  .changed-tag{display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700; letter-spacing:0; text-transform:none; color:var(--st-wait-fg); background:var(--st-wait-bg); padding:1px 6px; border-radius:4px;}
+  .changed-tag{display:inline-flex; align-items:center; gap:4px; font-size:var(--fs-12); font-weight:700; letter-spacing:0; text-transform:none; color:var(--st-wait-fg); background:var(--st-wait-bg); padding:1px 6px; border-radius:4px;}
   .photos{display:flex; gap:var(--sp-2); flex-wrap:wrap;}
   .photo{width:132px; aspect-ratio:4/3; border-radius:var(--r-sm); background:linear-gradient(135deg,#E7ECF4,#D2DAE8); border:1px solid var(--border); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; color:var(--text-muted); font-size:var(--fs-12);}
   .photo.after{background:linear-gradient(135deg,#E3F4EE,#CBE8DC); color:var(--st-approved-fg);}
@@ -850,6 +850,18 @@
   .bn-item.primary .bn-fab{background:var(--primary); color:#fff; box-shadow:0 6px 16px rgba(13,50,96,.3);}
   .btn-accent:hover{background:linear-gradient(135deg, #F2AE38, #D98E14); border-color:#B8760E; color:var(--on-accent); box-shadow:0 10px 24px rgba(240,165,39,.45); transform:translateY(-1px);}
   @media (prefers-reduced-motion:reduce){ .btn-accent:hover{transform:none;} }
+  .action-btns .btn{white-space:normal; text-align:center; line-height:1.25; padding-block:8px;}
+  .reward-line{display:flex; align-items:center; gap:var(--sp-3); flex-wrap:wrap; padding:var(--sp-3) 0; border-top:1px solid var(--border);}
+  .reward-line:first-child{border-top:none;}
+  .reward-line .grow{flex:1 1 200px; min-width:0;}
+  .step-now{display:none; margin:0 0 var(--sp-3); font-size:var(--fs-14); font-weight:600;}
+  .jump-decision{display:none;}
+  @media (max-width:1199px){ .jump-decision{display:inline-flex; margin-top:var(--sp-3);} }
+  @media (max-width:640px){
+    .stepper{margin-bottom:var(--sp-2);}
+    .step b, .step span.d{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap;}
+    .step-now{display:block;}
+  }
   .demo-footnote{font-size:var(--fs-12); color:var(--text-subtle); text-align:center; margin-top:var(--sp-6);}
 
   @media (max-width:900px){
@@ -1723,7 +1735,8 @@ AFTER.ideas = (_, q) => {
 function stepperHTML(r){
   const steps = [['Diajukan', r.submittedAt],['Review ide', r.approvedAt || (r.status==='rejected'?r.endAt:null)],['Implementasi', r.reportAt],['Review laporan', r.status==='implemented'?r.endAt:null],['Implemented', r.endAt && r.status==='implemented' ? r.endAt : null]];
   const at = {draft:0, submitted:1, revise_idea:1, rejected:1, approved:2, review_report:3, revise_report:3, implemented:5}[r.status];
-  return `<ol class="stepper" aria-label="Tahapan">${steps.map(([l,dt],i)=>{
+  const nowTxt = r.status==='implemented' ? 'Selesai · Implemented' : r.status==='rejected' ? 'Ditolak pada review ide' : `Tahap ${at+1} dari 5 · ${steps[at][0]}${r.status.startsWith('revise') ? ' · perlu revisi' : ''}`;
+  return `<p class="step-now">${nowTxt}</p><ol class="stepper" aria-label="Tahapan">${steps.map(([l,dt],i)=>{
     let cls = i < at ? 'done' : i===at ? 'current' : '';
     if(i===at && (r.status==='revise_idea'||r.status==='revise_report')) cls='revise';
     if(i===1 && r.status==='rejected') cls='stop';
@@ -1812,7 +1825,8 @@ VIEWS.idea = (id) => {
         <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">${pill(r.status)}${timeTag(r)}</div>
       </div>
       ${stepperHTML(r)}
-      <div style="display:flex; flex-direction:column; gap:var(--sp-3);">${noteCard}${S.role==='submitter' || S.role==='admin' || !['submitted','review_report'].includes(r.status) ? actionPanel(r) : ''}</div>
+      <div style="display:flex; flex-direction:column; gap:var(--sp-3);">${noteCard}${S.role==='submitter' || S.role==='admin' || !['submitted','review_report'].includes(r.status) ? actionPanel(r) : ''}
+        ${S.role==='superior' && ['submitted','review_report'].includes(r.status) ? `<div><button class="btn btn-primary jump-decision" onclick="document.getElementById('reviewNote').focus()">${icon('check-circle')} Baca dulu, lalu ke keputusan</button></div>` : ''}</div>
     </div>
 
     <div class="detail-grid">
@@ -2092,7 +2106,7 @@ VIEWS.points = () => {
     </div>
     <div class="grid grid-2">
       <div class="card card-pad"><h2 class="section-title">${icon('coins')} Reward per ide</h2><p class="section-sub">Dibayarkan bersama gaji setelah cut-off tanggal 17</p>
-        ${rewards.length ? `<div class="scroll-x">${tableHTML(['Ide','Reward','Status'], rewards.map(r=>[`<a href="#/idea/${r.id}">${esc(r.title)}</a>`, rp(r.reward.rp), r.reward.paid?`<span class="tag ok">Cair ${fShort(r.reward.paidAt)}</span>`:`<span class="tag info">Diproses</span>`]))}</div>` : emptyState('coins','Belum ada reward','Reward diberikan saat ide Anda Implemented.')}
+        ${rewards.length ? `<div>${rewards.map(r=>`<div class="reward-line"><div class="grow"><a href="#/idea/${r.id}">${esc(r.title)}</a><div class="ss-meta">${r.id} · Implemented ${fShort(r.endAt)}</div></div><b>${rp(r.reward.rp)}</b>${r.reward.paid?`<span class="tag ok">Cair ${fShort(r.reward.paidAt)}</span>`:`<span class="tag info">Diproses</span>`}</div>`).join('')}</div>` : emptyState('coins','Belum ada reward','Reward diberikan saat ide Anda Implemented.')}
       </div>
       <div class="card card-pad"><h2 class="section-title">${icon('clock')} Riwayat poin</h2><p class="section-sub">Terbaru di atas</p>
         ${ev.length ? `<ol class="timeline stack-gap">${ev.map(e=>`<li class="tone-${e.text==='Implemented'?'done':''}"><div><b>+${e.pts}</b> · ${e.text} — <a href="#/idea/${e.r.id}">${esc(e.r.title)}</a></div><div class="when">${fDate(e.at)}</div></li>`).join('')}</ol>` : emptyState('trophy','Belum ada poin',`Ajukan ide pertama untuk mendapat +${POINTS.submit} poin.`, `<a class="btn btn-primary" href="#/create">Ajukan ide</a>`)}
