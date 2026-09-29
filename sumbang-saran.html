@@ -1,0 +1,1848 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sumbang Saran — Platform Mock-up</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Two families only: Space Grotesk for headings, Inter for everything else (numbers use tabular-nums). -->
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<style>
+  /* =========================================================
+     DESIGN TOKENS
+     Rule of colour: amber = achievement only (Implemented, medals).
+     Navy = the one primary action colour. Status colours are
+     reserved for status and always ship with an icon + label.
+     ========================================================= */
+  :root{
+    /* brand */
+    --navy-950:#081C33;
+    --navy-900:#0D3260;
+    --navy-800:#154F84;
+    --navy-700:#1E63A8;
+
+    /* neutrals */
+    --bg:#F4F6F9;
+    --surface:#FFFFFF;
+    --surface-sunken:#F7F8FB;
+    --border:#DDE2EA;
+    --border-strong:#C4CBD6;
+    --text:#111827;
+    --text-muted:#4B5563;     /* 7.5:1 on white */
+    --text-subtle:#5F6B7A;    /* secondary meta, >= 4.5:1 on white and --bg */
+    --placeholder:#6B7280;
+
+    /* interactive */
+    --primary:var(--navy-900);
+    --primary-hover:var(--navy-800);
+    --on-primary:#FFFFFF;
+    --link:#1D5FA8;
+    --focus:#2563EB;
+
+    /* status: fg on bg is >= 4.5:1 */
+    --st-wait-fg:#1D4ED8;      --st-wait-bg:#EAF0FE;
+    --st-revise-fg:#B93815;    --st-revise-bg:#FDECE4;
+    --st-approved-fg:#0B6E55;  --st-approved-bg:#E3F4EE;
+    --st-rejected-fg:#B42318;  --st-rejected-bg:#FCE9E7;
+    --st-done-fg:#92400E;      --st-done-bg:#FDF1D8;
+
+    /* chart series (validated: dataviz validate_palette, light) */
+    --series-submitted:#2563EB;
+    --series-approved:#0E8A6A;
+    --series-implemented:#B45309;
+    --series-rejected:#C23B32;
+    --series-neutral:#A7B0BE;
+    --series-single:#2563EB;
+
+    /* medals (leaderboard only) */
+    --gold:#E0A12A; --gold-d:#B7791F;
+    --silver:#B9C2CF; --silver-d:#838C9B;
+    --bronze:#C98452; --bronze-d:#9C6136;
+
+    /* type scale — 6 steps; --fs-body grows to 16px on mobile */
+    --fs-12:12px; --fs-14:14px; --fs-16:16px; --fs-20:20px; --fs-24:24px; --fs-32:32px;
+    --fs-body:14px;
+    --font-display:'Space Grotesk', system-ui, sans-serif;
+    --font-body:'Inter', system-ui, sans-serif;
+
+    /* radius — 3 steps + pill */
+    --r-sm:8px; --r-md:12px; --r-lg:16px; --r-pill:999px;
+
+    /* spacing */
+    --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px; --sp-8:32px;
+
+    /* elevation */
+    --shadow-sm:0 1px 2px rgba(16,24,40,.06);
+    --shadow-md:0 8px 24px rgba(16,24,40,.10);
+
+    /* z-index scale */
+    --z-sticky:10; --z-nav:30; --z-overlay:40; --z-sheet:50; --z-toast:60;
+
+    /* motion */
+    --dur-fast:150ms; --dur:220ms; --ease:cubic-bezier(.22,1,.36,1);
+
+    /* touch */
+    --target:44px;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--font-body); font-size:var(--fs-body); line-height:1.5;
+    background:var(--bg); color:var(--text);
+    -webkit-font-smoothing:antialiased; min-height:100vh;
+    font-variant-numeric:tabular-nums;
+  }
+  h1,h2,h3{font-family:var(--font-display); line-height:1.25; margin:0; letter-spacing:-.01em;}
+  a{color:var(--link);}
+  button{font-family:inherit; font-size:inherit; cursor:pointer; color:inherit;}
+  :focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
+  .hidden, [hidden]{display:none !important;}
+  .sr-only{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;}
+  svg.ic{flex:none; width:1.15em; height:1.15em; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; vertical-align:-.2em;}
+
+  .skip-link{position:absolute; left:var(--sp-4); top:-60px; z-index:var(--z-toast); background:var(--primary); color:#fff; padding:10px 16px; border-radius:var(--r-sm); text-decoration:none; font-weight:600;}
+  .skip-link:focus{top:var(--sp-4);}
+
+  /* ===================== LOGIN ===================== */
+  .login-screen{min-height:100vh; display:grid; grid-template-columns:1.05fr 1fr;}
+  .login-brand{
+    position:relative; overflow:hidden; color:#fff; padding:56px; display:flex; flex-direction:column;
+    background:linear-gradient(160deg, var(--navy-950), var(--navy-900) 60%, var(--navy-800));
+  }
+  .login-brand::before{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background-image:radial-gradient(rgba(255,255,255,.07) 1px, transparent 1px); background-size:26px 26px;
+  }
+  .login-brand-top{position:relative; display:flex; align-items:center; gap:12px;}
+  .logo-mark{width:44px; height:44px; border-radius:var(--r-md); background:#fff; padding:7px; display:flex; align-items:center; justify-content:center; flex:none;}
+  .logo-mark img{width:100%; height:100%; object-fit:contain;}
+  .logo-fallback{font-family:var(--font-display); font-weight:700; color:var(--navy-900); font-size:var(--fs-20);}
+  .login-brand-top .name{font-family:var(--font-display); font-weight:600; font-size:var(--fs-20); line-height:1.2;}
+  .login-brand-top .name small{display:block; font-family:var(--font-body); font-weight:500; font-size:var(--fs-12); color:#B7C3DA; letter-spacing:.04em; text-transform:uppercase;}
+  .login-hero{position:relative; margin-top:auto; max-width:460px;}
+  .login-hero .eyebrow{font-size:var(--fs-12); font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:#F5C46B; margin-bottom:var(--sp-3);}
+  .login-hero h1{font-size:var(--fs-32); font-weight:700; margin-bottom:var(--sp-3);}
+  .login-hero p{font-size:var(--fs-14); color:#C3CCDD; line-height:1.65; margin:0 0 var(--sp-6);}
+  .login-stats{position:relative; display:flex; gap:var(--sp-6); flex-wrap:wrap;}
+  .login-stats b{display:block; font-size:var(--fs-20); font-weight:700;}
+  .login-stats span{font-size:var(--fs-12); color:#B7C3DA;}
+  .login-affiliate{position:relative; display:flex; align-items:center; gap:var(--sp-3); margin-top:var(--sp-8); padding-top:var(--sp-5); border-top:1px solid rgba(255,255,255,.14);}
+  .login-affiliate span{font-size:var(--fs-12); color:#B7C3DA; text-transform:uppercase; letter-spacing:.06em; font-weight:600;}
+  .login-affiliate img{height:20px; width:auto; filter:brightness(0) invert(1);}
+  .wordmark-fallback{font-family:var(--font-display); font-weight:700; letter-spacing:.02em;}
+
+  .login-form-side{display:flex; align-items:center; justify-content:center; padding:40px;}
+  .login-form-wrap{width:100%; max-width:380px; background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:32px; box-shadow:var(--shadow-md);}
+  .login-form-wrap h2{font-size:var(--fs-24); font-weight:600; margin-bottom:var(--sp-1);}
+  .login-form-wrap .sub{font-size:var(--fs-14); color:var(--text-muted); margin:0 0 var(--sp-6);}
+  .login-row-between{display:flex; justify-content:space-between; align-items:center; gap:var(--sp-3); font-size:var(--fs-14); margin:-4px 0 var(--sp-5);}
+  .login-row-between a{font-weight:600; text-decoration:none; min-height:var(--target); display:inline-flex; align-items:center;}
+  .check-label{display:inline-flex; align-items:center; gap:var(--sp-2); color:var(--text-muted); min-height:var(--target); cursor:pointer;}
+  .check-label input{width:18px; height:18px; accent-color:var(--primary);}
+  .login-divider{display:flex; align-items:center; gap:10px; margin:var(--sp-5) 0; font-size:var(--fs-12); color:var(--text-subtle);}
+  .login-divider::before,.login-divider::after{content:""; flex:1; height:1px; background:var(--border);}
+  .demo-note{margin-top:var(--sp-6); padding:var(--sp-4); background:var(--surface-sunken); border:1px solid var(--border); border-radius:var(--r-md); font-size:var(--fs-14); color:var(--text-muted);}
+  .demo-note b{color:var(--text); display:block; margin-bottom:var(--sp-1);}
+  .demo-roles{display:flex; gap:var(--sp-2); margin-top:var(--sp-3);}
+  .demo-roles .btn{flex:1; padding-inline:var(--sp-2);}
+
+  @media (max-width:860px){ .login-screen{grid-template-columns:1fr;} .login-brand{display:none;} }
+
+  /* ===================== APP SHELL ===================== */
+  .app-shell{display:grid; grid-template-columns:248px 1fr; min-height:100vh; gap:var(--sp-4); padding:var(--sp-4);}
+
+  .sidebar{
+    background:var(--navy-950); border-radius:var(--r-lg); color:#fff; padding:var(--sp-5) var(--sp-3);
+    display:flex; flex-direction:column; position:sticky; top:var(--sp-4); height:calc(100vh - 32px);
+  }
+  .brand{display:flex; align-items:center; gap:10px; padding:4px 8px 20px;}
+  .brand .logo-mark{width:36px; height:36px; padding:6px; border-radius:var(--r-sm);}
+  .brand-name{font-family:var(--font-display); font-weight:600; font-size:var(--fs-16); line-height:1.2;}
+  .brand-name small{display:block; font-family:var(--font-body); font-weight:500; font-size:var(--fs-12); color:#B7C3DA; letter-spacing:.03em; text-transform:uppercase;}
+  .nav-section-label{font-size:var(--fs-12); text-transform:uppercase; letter-spacing:.08em; color:#9FB0CC; padding:var(--sp-4) 10px var(--sp-2); font-weight:600;}
+  .nav-item{
+    display:flex; align-items:center; gap:10px; min-height:var(--target); padding:0 12px; border-radius:var(--r-sm);
+    color:#D3DBE8; font-size:var(--fs-14); font-weight:500; border:none; background:none; width:100%; text-align:left; position:relative;
+    transition:background var(--dur-fast) ease, color var(--dur-fast) ease;
+  }
+  .nav-item:hover{background:rgba(255,255,255,.07); color:#fff;}
+  .nav-item[aria-current="page"]{background:#15345A; color:#fff; font-weight:600;}
+  .nav-item[aria-current="page"]::before{content:""; position:absolute; left:0; top:10px; bottom:10px; width:3px; border-radius:3px; background:#7FB2F5;}
+  .nav-item .badge{margin-left:auto; min-width:22px; height:22px; padding:0 7px; border-radius:var(--r-pill); background:#fff; color:var(--navy-950); font-size:var(--fs-12); font-weight:700; display:inline-flex; align-items:center; justify-content:center;}
+  .sidebar-footer{margin-top:auto; padding-top:var(--sp-3); border-top:1px solid rgba(255,255,255,.1);}
+  .role-note{font-size:var(--fs-12); color:#B7C3DA; padding:var(--sp-2) 10px 0;}
+  .logout-link{display:flex; align-items:center; gap:var(--sp-2); min-height:var(--target); padding:0 10px; font-size:var(--fs-14); color:#D3DBE8; border:none; background:none; width:100%; text-align:left; border-radius:var(--r-sm); margin-top:var(--sp-1);}
+  .logout-link:hover{background:rgba(255,255,255,.07); color:#fff;}
+
+  .main{display:flex; flex-direction:column; min-width:0; gap:var(--sp-4);}
+  .topbar{
+    min-height:64px; background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg);
+    display:flex; align-items:center; justify-content:space-between; gap:var(--sp-4); padding:var(--sp-2) var(--sp-5);
+    position:sticky; top:var(--sp-4); z-index:var(--z-sticky); box-shadow:var(--shadow-sm);
+  }
+  .topbar-title{font-family:var(--font-display); font-weight:600; font-size:var(--fs-16); line-height:1.3;}
+  .topbar-title span{display:block; color:var(--text-muted); font-weight:400; font-size:var(--fs-12); font-family:var(--font-body);}
+  .role-switch{display:flex; gap:2px; background:var(--surface-sunken); border:1px solid var(--border); border-radius:var(--r-pill); padding:3px;}
+  .role-switch button{white-space:nowrap; border:none; background:none; min-height:36px; padding:0 14px; border-radius:var(--r-pill); font-size:var(--fs-14); font-weight:600; color:var(--text-muted); transition:background var(--dur-fast) ease, color var(--dur-fast) ease;}
+  .role-switch button[aria-pressed="true"]{background:var(--primary); color:#fff;}
+  .topbar-right{display:flex; align-items:center; gap:var(--sp-4);}
+  .icon-btn{width:var(--target); height:var(--target); border-radius:var(--r-md); border:1px solid var(--border); background:var(--surface); display:flex; align-items:center; justify-content:center; position:relative; transition:border-color var(--dur-fast) ease;}
+  .icon-btn:hover{border-color:var(--border-strong);}
+  .icon-btn .dot{position:absolute; top:9px; right:10px; width:8px; height:8px; border-radius:50%; background:var(--st-rejected-fg); border:2px solid #fff;}
+  .avatar-chip{display:flex; align-items:center; gap:10px; padding-left:var(--sp-4); border-left:1px solid var(--border);}
+  .avatar{width:36px; height:36px; border-radius:50%; background:var(--navy-800); color:#fff; display:flex; align-items:center; justify-content:center; font-size:var(--fs-12); font-weight:700; flex:none;}
+  .avatar-chip .who{font-size:var(--fs-14); font-weight:600; line-height:1.3;}
+  .avatar-chip .who small{display:block; font-weight:400; color:var(--text-muted); font-size:var(--fs-12);}
+
+  #main:focus{outline:none;}
+  .content{padding:0 0 40px; max-width:1280px; width:100%; margin:0 auto;}
+  .view{display:none;}
+  .view.active{display:block; animation:viewIn var(--dur) var(--ease);}
+  @keyframes viewIn{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;}}
+
+  .page-title{font-size:var(--fs-24); font-weight:600; margin-bottom:var(--sp-1);}
+  .page-sub{color:var(--text-muted); margin:0 0 var(--sp-5); max-width:70ch;}
+
+  .card{background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); box-shadow:var(--shadow-sm);}
+  .card-pad{padding:var(--sp-5) var(--sp-6);}
+  .grid{display:grid; gap:var(--sp-4);}
+  .grid-2{grid-template-columns:repeat(2, minmax(0,1fr));}
+  .grid-3{grid-template-columns:repeat(3, minmax(0,1fr));}
+  .grid-4{grid-template-columns:repeat(4, minmax(0,1fr));}
+  .section-title{font-size:var(--fs-16); font-weight:600; display:flex; align-items:center; gap:var(--sp-2);}
+  .section-title svg.ic{color:var(--text-muted);}
+  .section-sub{font-size:var(--fs-14); color:var(--text-muted); margin:2px 0 var(--sp-4);}
+  .stack-gap{margin-top:var(--sp-4);}
+
+  /* ===================== BUTTONS (one system) ===================== */
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:var(--sp-2);
+    min-height:var(--target); padding:0 var(--sp-4); border-radius:var(--r-md);
+    border:1px solid var(--border-strong); background:var(--surface); color:var(--text);
+    font-size:var(--fs-14); font-weight:600; text-decoration:none; white-space:nowrap;
+    transition:background var(--dur-fast) ease, border-color var(--dur-fast) ease, color var(--dur-fast) ease;
+  }
+  .btn:hover{background:var(--surface-sunken);}
+  .btn-primary{background:var(--primary); border-color:var(--primary); color:var(--on-primary);}
+  .btn-primary:hover{background:var(--primary-hover); border-color:var(--primary-hover);}
+  .btn-success{background:var(--st-approved-fg); border-color:var(--st-approved-fg); color:#fff;}
+  .btn-success:hover{background:#085A45;}
+  .btn-warn{color:var(--st-revise-fg); border-color:#EDB9A3;}
+  .btn-warn:hover{background:var(--st-revise-bg);}
+  .btn-danger{color:var(--st-rejected-fg); border-color:#EBB4AE;}
+  .btn-danger:hover{background:var(--st-rejected-bg);}
+  .btn-ghost{background:none; border-color:transparent; color:var(--text-muted);}
+  .btn-ghost:hover{background:var(--surface-sunken); color:var(--text);}
+  .btn-sm{min-height:36px; padding:0 var(--sp-3);}
+  .btn-block{width:100%;}
+  .btn[disabled]{opacity:.65; cursor:progress;}
+  .spinner{width:14px; height:14px; border-radius:50%; border:2px solid currentColor; border-right-color:transparent; animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  @media (pointer:coarse){ .btn-sm{min-height:var(--target);} }
+
+  /* ===================== STATUS PILL ===================== */
+  .pill{display:inline-flex; align-items:center; gap:5px; font-size:var(--fs-12); font-weight:600; padding:3px 10px 3px 8px; border-radius:var(--r-pill); white-space:nowrap;}
+  .pill svg.ic{width:13px; height:13px;}
+  .pill.wait{background:var(--st-wait-bg); color:var(--st-wait-fg);}
+  .pill.revise{background:var(--st-revise-bg); color:var(--st-revise-fg);}
+  .pill.approved{background:var(--st-approved-bg); color:var(--st-approved-fg);}
+  .pill.rejected{background:var(--st-rejected-bg); color:var(--st-rejected-fg);}
+  .pill.done{background:var(--st-done-bg); color:var(--st-done-fg);}
+  .pill.neutral{background:var(--surface-sunken); color:var(--text-muted); border:1px solid var(--border);}
+
+  .needs-badge{display:inline-flex; align-items:center; gap:4px; font-size:var(--fs-12); font-weight:700; color:#fff; background:var(--primary); padding:1px 8px; border-radius:var(--r-pill); margin-left:var(--sp-2); vertical-align:1px;}
+
+  /* ===================== FORMS ===================== */
+  .field{margin-bottom:var(--sp-4);}
+  .field > label, .field > .label{display:block; font-size:var(--fs-14); font-weight:600; margin-bottom:6px;}
+  .req{color:var(--st-rejected-fg);}
+  .hint{font-size:var(--fs-12); color:var(--text-subtle); font-weight:400;}
+  .input, .field input[type=text], .field input[type=email], .field input[type=password], .field textarea, .field select{
+    width:100%; min-height:var(--target); border:1px solid var(--border-strong); border-radius:var(--r-sm); padding:10px 12px;
+    font-size:var(--fs-14); font-family:inherit; background:var(--surface); color:var(--text);
+    transition:border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+  }
+  .field input::placeholder, .field textarea::placeholder, .input::placeholder{color:var(--placeholder);}
+  .field input:focus, .field textarea:focus, .field select:focus, .input:focus{border-color:var(--focus); outline:none; box-shadow:0 0 0 3px rgba(37,99,235,.2);}
+  .field textarea{resize:vertical; min-height:88px; line-height:1.5;}
+  .field input:disabled{background:var(--surface-sunken); color:var(--text-muted); border-color:var(--border);}
+  .field [aria-invalid="true"]{border-color:var(--st-rejected-fg);}
+  .field-error{display:none; align-items:center; gap:6px; margin-top:6px; font-size:var(--fs-12); font-weight:600; color:var(--st-rejected-fg);}
+  .field.has-error .field-error{display:flex;}
+  .field.has-error .chip-select, .field.has-error .upload-box{border-radius:var(--r-sm); box-shadow:0 0 0 2px var(--st-rejected-fg);}
+  .row-2{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:var(--sp-4);}
+  .row-3{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:var(--sp-4);}
+
+  .chip-select{display:flex; flex-wrap:wrap; gap:var(--sp-2);}
+  .chip{min-height:36px; padding:0 14px; border-radius:var(--r-pill); border:1px solid var(--border-strong); background:var(--surface); color:var(--text-muted); font-size:var(--fs-14); font-weight:500; display:inline-flex; align-items:center; gap:6px; transition:background var(--dur-fast) ease, color var(--dur-fast) ease, border-color var(--dur-fast) ease;}
+  .chip:hover{border-color:var(--text-subtle); color:var(--text);}
+  .chip[aria-pressed="true"]{background:var(--primary); border-color:var(--primary); color:#fff;}
+  .chip[aria-pressed="true"]::before{content:"✓"; font-weight:700;}
+  @media (pointer:coarse){ .chip{min-height:var(--target);} }
+
+  .upload-box{position:relative; display:block; font-weight:400; border:1.5px dashed var(--border-strong); border-radius:var(--r-md); padding:var(--sp-5); text-align:center; color:var(--text-muted); font-size:var(--fs-14); background:var(--surface-sunken); cursor:pointer; transition:border-color var(--dur-fast) ease, background var(--dur-fast) ease;}
+  .upload-box:hover, .upload-box:focus-within{border-color:var(--focus); background:#F2F6FE;}
+  .upload-box b{display:block; color:var(--text); margin-bottom:2px;}
+  .upload-box input[type=file]{position:absolute; inset:0; opacity:0; cursor:pointer; width:100%;}
+  .upload-box .file-name{display:block; margin-top:6px; font-weight:600; color:var(--st-approved-fg);}
+  .section-divider{border:none; border-top:1px solid var(--border); margin:var(--sp-6) 0;}
+  .form-section-label{display:flex; align-items:center; gap:var(--sp-2); font-family:var(--font-display); font-weight:600; font-size:var(--fs-16); margin-bottom:var(--sp-4);}
+  .form-section-label .num{width:26px; height:26px; border-radius:var(--r-sm); background:var(--primary); color:#fff; font-size:var(--fs-12); display:flex; align-items:center; justify-content:center; font-family:var(--font-body);}
+  .form-actions{display:flex; justify-content:flex-end; gap:var(--sp-3); margin-top:var(--sp-6); flex-wrap:wrap;}
+
+  /* ===================== BANNERS ===================== */
+  .banner{display:flex; align-items:flex-start; gap:var(--sp-3); border-radius:var(--r-md); padding:var(--sp-4); margin-bottom:var(--sp-4); border:1px solid transparent;}
+  .banner .b-ic{width:36px; height:36px; border-radius:var(--r-sm); display:flex; align-items:center; justify-content:center; flex:none;}
+  .banner .b-ic svg.ic{width:18px; height:18px;}
+  .banner .t{font-size:var(--fs-14); font-weight:700;}
+  .banner .d{font-size:var(--fs-14); line-height:1.55; color:var(--text-muted);}
+  .banner .cta{margin-top:var(--sp-3);}
+  .banner.info{background:var(--st-wait-bg); border-color:#CFDDFB;}   .banner.info .b-ic{background:#D4E1FC; color:var(--st-wait-fg);}     .banner.info .t{color:#1E3A8A;}
+  .banner.warn{background:var(--st-revise-bg); border-color:#F5CDBB;} .banner.warn .b-ic{background:#F8D5C5; color:var(--st-revise-fg);} .banner.warn .t{color:#8A2A0F;}
+  .banner.danger{background:var(--st-rejected-bg); border-color:#F3C6C1;} .banner.danger .b-ic{background:#F6D0CC; color:var(--st-rejected-fg);} .banner.danger .t{color:#8F1D14;}
+  .banner.success{background:var(--st-approved-bg); border-color:#C3E6D9;} .banner.success .b-ic{background:#C9EADD; color:var(--st-approved-fg);} .banner.success .t{color:#084D3B;}
+  .banner.done{background:var(--st-done-bg); border-color:#F2D9A6;} .banner.done .b-ic{background:#F7E0B0; color:var(--st-done-fg);} .banner.done .t{color:#78350F;}
+  .banner.neutral{background:var(--surface-sunken); border-color:var(--border);} .banner.neutral .b-ic{background:#E7EBF1; color:var(--text-muted);}
+
+  /* ===================== REVIEW PANEL ===================== */
+  .action-panel{border:1px solid var(--border); border-radius:var(--r-md); padding:var(--sp-4); margin-bottom:var(--sp-4); background:var(--surface-sunken);}
+  .action-panel .field{margin-bottom:0;}
+  .action-btns{display:flex; gap:var(--sp-2); margin-top:var(--sp-3); flex-wrap:wrap;}
+  .action-btns .btn{flex:1; min-width:130px;}
+
+  /* ===================== TABLES & LIST ===================== */
+  table{width:100%; border-collapse:collapse;}
+  th{text-align:left; font-size:var(--fs-12); color:var(--text-muted); text-transform:uppercase; letter-spacing:.04em; font-weight:600; padding:var(--sp-3) var(--sp-4); border-bottom:1px solid var(--border);}
+  td{padding:var(--sp-3) var(--sp-4); border-bottom:1px solid var(--border); vertical-align:middle;}
+  tbody tr:last-child td{border-bottom:none;}
+  tr.ss-row{cursor:pointer; transition:background var(--dur-fast) ease;}
+  tr.ss-row:hover{background:var(--surface-sunken);}
+  tr.ss-row.selected{background:#EEF3FC; box-shadow:inset 3px 0 0 var(--primary);}
+  .row-link{display:block; min-height:var(--target); width:100%; text-align:left; background:none; border:none; padding:0; border-radius:var(--r-sm);}
+  .ss-id{font-size:var(--fs-12); color:var(--text-subtle); font-weight:500;}
+  .ss-title{font-weight:600;}
+  .ss-meta{font-size:var(--fs-12); color:var(--text-subtle);}
+  .cat-tag{font-size:var(--fs-12); color:var(--text-muted); background:var(--surface-sunken); border:1px solid var(--border); border-radius:var(--r-sm); padding:2px 8px; font-weight:600; white-space:nowrap;}
+  .scroll-x{position:relative; overflow-x:auto; -webkit-overflow-scrolling:touch;}
+  .scroll-x table{min-width:560px;}
+  .list-detail-split{display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr); gap:var(--sp-4); align-items:start;}
+  .detail-header{display:flex; justify-content:space-between; align-items:flex-start; gap:var(--sp-3); margin-bottom:var(--sp-3); flex-wrap:wrap;}
+  .progress{display:flex; gap:4px; margin-bottom:6px;}
+  .progress span{flex:1; height:6px; border-radius:3px; background:var(--border);}
+  .progress span.on{background:var(--primary);}
+  .progress-label{font-size:var(--fs-12); color:var(--text-muted); margin-bottom:var(--sp-4);}
+  .ss-cat-inline{display:none;}
+  /* side-by-side list+detail: fold Jenis into the ID line so titles and dates keep room */
+  @media (min-width:1200px){ .col-jenis{display:none;} .ss-cat-inline{display:inline;} }
+  .mobile-back-btn{display:none; align-items:center; gap:6px; background:none; border:none; color:var(--link); font-weight:600; min-height:var(--target); padding:0; margin-bottom:var(--sp-2);}
+
+  /* chat */
+  .chat-thread{display:flex; flex-direction:column; gap:var(--sp-3); max-height:340px; overflow-y:auto; padding:4px 2px 6px;}
+  .msg{max-width:85%; padding:10px 13px; border-radius:var(--r-md); line-height:1.45;}
+  .msg .who{font-size:var(--fs-12); font-weight:700; margin-bottom:2px;}
+  .msg .time{font-size:var(--fs-12); margin-top:4px; opacity:.8;}
+  .msg.me{align-self:flex-end; background:var(--primary); color:#fff; border-bottom-right-radius:4px;}
+  .msg.them{align-self:flex-start; background:var(--surface-sunken); border:1px solid var(--border); border-bottom-left-radius:4px;}
+  .system-msg{align-self:center; background:var(--surface-sunken); border:1px solid var(--border); color:var(--text-muted); font-size:var(--fs-12); padding:4px 12px; border-radius:var(--r-pill); text-align:center;}
+  .chat-input{display:flex; gap:var(--sp-2); margin-top:var(--sp-3); border-top:1px solid var(--border); padding-top:var(--sp-3);}
+  .chat-input .input{flex:1;}
+
+  /* ===================== DASHBOARD ===================== */
+  .hero{border-radius:var(--r-lg); padding:var(--sp-6) var(--sp-8); background:linear-gradient(120deg, var(--navy-950), var(--navy-800)); color:#fff; margin-bottom:var(--sp-4); display:flex; justify-content:space-between; align-items:center; gap:var(--sp-5); flex-wrap:wrap;}
+  .hero h1{font-size:var(--fs-24); font-weight:700; margin-bottom:var(--sp-1);}
+  .hero p{color:#C3CCDD; margin:0; max-width:48ch;}
+  .hero .btn{background:#fff; color:var(--navy-950); border-color:#fff;}
+  .hero .btn:hover{background:#E8EEF7;}
+
+  .quick-tiles{display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:var(--sp-3); margin-bottom:var(--sp-4);}
+  .tile{background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:var(--sp-4); display:flex; align-items:center; gap:var(--sp-3); text-align:left; transition:border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;}
+  .tile:hover{border-color:var(--border-strong); box-shadow:var(--shadow-md);}
+  .tile .t-ic{width:40px; height:40px; border-radius:var(--r-md); background:#EDF2FA; color:var(--navy-800); display:flex; align-items:center; justify-content:center; flex:none;}
+  .tile .t-ic svg.ic{width:20px; height:20px;}
+  .tile .lbl{font-weight:600; display:block;}
+  .tile .sub{font-size:var(--fs-12); color:var(--text-subtle);}
+
+  .stat-row{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:var(--sp-3); margin-bottom:var(--sp-4);}
+  .stat{background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:var(--sp-4) var(--sp-5);}
+  .stat .lbl{font-size:var(--fs-14); color:var(--text-muted); font-weight:500;}
+  .stat .num{font-size:var(--fs-24); font-weight:700; line-height:1.2; margin-top:2px;}
+
+  .mini-item{display:flex; align-items:center; gap:var(--sp-3); width:100%; padding:var(--sp-3) var(--sp-2); background:none; border:none; border-radius:var(--r-sm); text-align:left; min-height:var(--target);}
+  .mini-item:hover{background:var(--surface-sunken);}
+  .mini-item + .mini-item{border-top:1px solid var(--border); border-radius:0;}
+  .mini-item{flex-wrap:wrap;}
+  .mini-item .grow{flex:1 1 200px; min-width:0;}
+  .mini-item .ss-title{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .empty-note{text-align:center; padding:var(--sp-4); color:var(--text-subtle);}
+
+  .scope-banner{display:flex; align-items:flex-start; gap:10px; background:var(--surface); border:1px solid var(--border); border-left:4px solid var(--primary); border-radius:var(--r-md); padding:var(--sp-3) var(--sp-4); margin-bottom:var(--sp-4); color:var(--text-muted);}
+  .scope-banner b{color:var(--text);}
+
+  .kpi-row{display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:var(--sp-3); margin-bottom:var(--sp-4);}
+  .kpi{background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:var(--sp-4);}
+  .kpi .label{font-size:var(--fs-14); color:var(--text-muted); font-weight:500;}
+  .kpi .value-row{display:flex; align-items:flex-end; justify-content:space-between; gap:var(--sp-2); margin-top:2px;}
+  .kpi .value{font-size:var(--fs-24); font-weight:700; line-height:1.2;}
+  .kpi canvas{width:72px !important; height:28px !important;}
+  .kpi .delta{font-size:var(--fs-12); margin-top:6px; color:var(--text-muted); display:flex; align-items:center; gap:4px;}
+  .kpi .delta.up{color:var(--st-approved-fg); font-weight:600;}
+
+  /* pipeline (replaces the linear funnel) */
+  .pipe{margin-bottom:var(--sp-5);}
+  .pipe:last-child{margin-bottom:0;}
+  .pipe-head{display:flex; justify-content:space-between; gap:var(--sp-3); font-size:var(--fs-14); margin-bottom:var(--sp-2); flex-wrap:wrap;}
+  .pipe-head b{font-weight:600;}
+  .pipe-bar{display:flex; gap:2px; height:14px; border-radius:4px; overflow:hidden; background:var(--surface);}
+  .pipe-bar span{display:block; height:100%;}
+  .pipe-legend{display:flex; flex-wrap:wrap; gap:var(--sp-2) var(--sp-5); margin:var(--sp-3) 0 0; padding:0; list-style:none; font-size:var(--fs-14);}
+  .pipe-legend li{display:flex; align-items:center; gap:6px; color:var(--text-muted);}
+  .pipe-legend .sw{width:10px; height:10px; border-radius:2px; flex:none;}
+  .pipe-legend b{color:var(--text); font-weight:600;}
+
+  .chart-box{position:relative; height:240px;}
+  .chart-table{margin-top:var(--sp-3); font-size:var(--fs-14);}
+  .chart-table summary{cursor:pointer; color:var(--link); font-weight:600; min-height:var(--target); display:flex; align-items:center;}
+  .chart-table table{margin-top:var(--sp-2);}
+  .chart-table td, .chart-table th{padding:6px var(--sp-3);}
+  .chart-table td.num{text-align:right;}
+
+  /* leaderboard */
+  .lb-tabs{display:flex; gap:var(--sp-2); flex-wrap:wrap; margin-bottom:var(--sp-4);}
+  .podium-card{background:linear-gradient(180deg, var(--navy-950), var(--navy-900)); border-radius:var(--r-lg); padding:var(--sp-8) var(--sp-6) 0; margin-bottom:var(--sp-4); overflow:hidden;}
+  .podium{display:flex; align-items:flex-end; justify-content:center; gap:var(--sp-4);}
+  .podium-col{width:150px; text-align:center;}
+  .podium-avatar{width:56px; height:56px; border-radius:50%; margin:0 auto 10px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:var(--fs-16); color:#1A1204; border:3px solid rgba(255,255,255,.6); position:relative;}
+  .podium-medal{position:absolute; top:-8px; right:-8px; width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:var(--fs-12); font-weight:700; color:#1A1204; border:2px solid var(--navy-950);}
+  .podium-name{color:#fff; font-size:var(--fs-14); font-weight:700;}
+  .podium-sub{color:#B7C3DA; font-size:var(--fs-12); margin-bottom:10px;}
+  .podium-bar{border-radius:var(--r-md) var(--r-md) 0 0; display:flex; justify-content:center; padding-top:12px; color:#1A1204; font-weight:700; font-size:var(--fs-16);}
+  .podium-col.first{order:2;} .podium-col.second{order:1;} .podium-col.third{order:3;}
+  .podium-col.first .podium-bar{height:150px; background:linear-gradient(180deg, var(--gold), var(--gold-d));}
+  .podium-col.second .podium-bar{height:112px; background:linear-gradient(180deg, var(--silver), var(--silver-d));}
+  .podium-col.third .podium-bar{height:88px; background:linear-gradient(180deg, var(--bronze), var(--bronze-d));}
+  .podium-col.first .podium-avatar,.podium-col.first .podium-medal{background:var(--gold);}
+  .podium-col.second .podium-avatar,.podium-col.second .podium-medal{background:var(--silver);}
+  .podium-col.third .podium-avatar,.podium-col.third .podium-medal{background:var(--bronze);}
+  .lb-row{display:flex; align-items:center; gap:var(--sp-3); padding:var(--sp-3) var(--sp-2);}
+  .lb-row + .lb-row{border-top:1px solid var(--border);}
+  .lb-rank{width:28px; text-align:center; font-weight:700; color:var(--text-muted);}
+  .lb-avatar{width:36px; height:36px; border-radius:50%; background:var(--navy-800); color:#fff; display:flex; align-items:center; justify-content:center; font-size:var(--fs-12); font-weight:700; flex:none;}
+  .lb-name{font-weight:600;}
+  .lb-sub{font-size:var(--fs-12); color:var(--text-subtle);}
+  .lb-bar-wrap{flex:1; max-width:180px; height:8px; background:var(--surface-sunken); border-radius:4px; overflow:hidden; margin-left:auto;}
+  .lb-bar{height:100%; width:100%; border-radius:4px; background:var(--series-single); transform-origin:left;}
+  .lb-score{font-weight:700; width:64px; text-align:right;}
+  .lb-row.me{background:#EEF3FC; border-radius:var(--r-md); border-top:none; margin-top:var(--sp-2); box-shadow:inset 0 0 0 1px #C9D8F3;}
+
+  /* announcements */
+  .announce-card{position:relative;}
+  .announce-card .section-title{margin-top:var(--sp-3); padding-right:40px;}
+  .announce-del{position:absolute; top:var(--sp-3); right:var(--sp-3); width:36px; height:36px; border-radius:var(--r-sm); border:1px solid var(--border); background:var(--surface); display:flex; align-items:center; justify-content:center; color:var(--text-muted);}
+  .announce-del:hover{border-color:var(--st-rejected-fg); color:var(--st-rejected-fg); background:var(--st-rejected-bg);}
+  @media (pointer:coarse){ .announce-del{width:var(--target); height:var(--target);} }
+  .announce-meta{font-size:var(--fs-12); color:var(--text-subtle); margin-top:var(--sp-3); display:flex; flex-wrap:wrap; gap:var(--sp-3);}
+  .announce-meta span{display:inline-flex; align-items:center; gap:4px;}
+
+  /* export */
+  .type-card{display:flex; flex-direction:column; align-items:flex-start; gap:6px; text-align:left; padding:var(--sp-4); border:1px solid var(--border); border-radius:var(--r-lg); background:var(--surface); transition:border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;}
+  .type-card:hover{border-color:var(--border-strong);}
+  .type-card[aria-checked="true"]{border-color:var(--primary); box-shadow:0 0 0 1px var(--primary);}
+  .type-card .t-ic{width:36px; height:36px; border-radius:var(--r-sm); background:#EDF2FA; color:var(--navy-800); display:flex; align-items:center; justify-content:center;}
+  .type-card .lbl{font-weight:600;}
+  .type-card .sub{font-size:var(--fs-12); color:var(--text-subtle); line-height:1.5;}
+  .note{display:flex; align-items:flex-start; gap:10px; font-size:var(--fs-14); color:var(--text-muted); background:var(--surface-sunken); border:1px solid var(--border); border-radius:var(--r-md); padding:var(--sp-3) var(--sp-4);}
+
+  /* toast */
+  .toast{position:fixed; left:50%; bottom:var(--sp-6); transform:translateX(-50%); z-index:var(--z-toast); background:var(--text); color:#fff; padding:12px 18px; border-radius:var(--r-md); box-shadow:var(--shadow-md); font-weight:500; display:flex; align-items:center; gap:var(--sp-2); max-width:calc(100vw - 32px);}
+
+  /* ===================== MOBILE NAV ===================== */
+  .bottom-nav{
+    display:none; position:fixed; left:0; right:0; bottom:0; z-index:var(--z-nav);
+    background:var(--surface); border-top:1px solid var(--border); align-items:stretch; justify-content:space-around;
+    padding:4px 4px calc(4px + env(safe-area-inset-bottom)); box-shadow:0 -4px 16px rgba(16,24,40,.06);
+  }
+  .bn-item{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; border:none; background:none; color:var(--text-muted); font-size:var(--fs-12); font-weight:600; min-height:52px; min-width:56px; padding:4px 6px; border-radius:var(--r-md); position:relative;}
+  .bn-item svg.ic{width:22px; height:22px;}
+  .bn-item[aria-current="page"]{color:var(--primary);}
+  .bn-item[aria-current="page"] svg.ic{stroke-width:2.4;}
+  .bn-item .bn-count{position:absolute; top:2px; right:8px; min-width:18px; height:18px; padding:0 5px; border-radius:var(--r-pill); background:var(--primary); color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;}
+  .bn-item.primary .bn-fab{width:44px; height:44px; border-radius:var(--r-md); background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; margin-top:-18px; box-shadow:var(--shadow-md);}
+
+  .more-backdrop{display:none; position:fixed; inset:0; background:rgba(8,12,22,.45); z-index:var(--z-overlay);}
+  .more-backdrop.open{display:block;}
+  .more-sheet{position:fixed; left:0; right:0; bottom:0; z-index:var(--z-sheet); background:var(--surface); border-radius:var(--r-lg) var(--r-lg) 0 0; padding:var(--sp-2) var(--sp-4) calc(var(--sp-4) + env(safe-area-inset-bottom)); transform:translateY(100%); visibility:hidden; transition:transform var(--dur) var(--ease), visibility 0s linear var(--dur); max-height:80vh; overflow-y:auto;}
+  .more-sheet.open{transform:translateY(0); visibility:visible; transition:transform var(--dur) var(--ease);}
+  .more-sheet .handle{width:36px; height:4px; border-radius:2px; background:var(--border-strong); margin:6px auto 12px;}
+  .more-sheet-title{font-family:var(--font-display); font-weight:600; font-size:var(--fs-16); padding:2px 4px 8px;}
+  .more-item{display:flex; align-items:center; gap:var(--sp-3); min-height:48px; padding:0 var(--sp-2); border-radius:var(--r-md); font-weight:600; border:none; background:none; width:100%; text-align:left;}
+  .more-item:active{background:var(--surface-sunken);}
+  .more-item svg.ic{color:var(--text-muted);}
+  .more-item.danger, .more-item.danger svg.ic{color:var(--st-rejected-fg);}
+  .more-section-label{font-size:var(--fs-12); text-transform:uppercase; letter-spacing:.06em; color:var(--text-subtle); font-weight:700; padding:var(--sp-4) var(--sp-2) var(--sp-1);}
+  .more-role-row{display:flex; gap:var(--sp-2); padding:var(--sp-2);}
+  .more-role-row .btn{flex:1; padding:0 6px;}
+  .more-role-row .btn[aria-pressed="true"]{background:var(--primary); color:#fff; border-color:var(--primary);}
+  .more-divider{border:none; border-top:1px solid var(--border); margin:var(--sp-2) 0;}
+
+  /* responsive table */
+  @media (max-width:640px){
+    table.responsive-table thead{display:none;}
+    table.responsive-table, table.responsive-table tbody, table.responsive-table tr, table.responsive-table td{display:block; width:100%;}
+    table.responsive-table tr{padding:var(--sp-3) var(--sp-2); border-bottom:1px solid var(--border);}
+    table.responsive-table td{border:none; padding:3px var(--sp-2);}
+    table.responsive-table td[data-th]{display:flex; align-items:center; gap:var(--sp-2);}
+    table.responsive-table td[data-th]::before{content:attr(data-th); flex:none; font-size:var(--fs-12); font-weight:600; color:var(--text-subtle); min-width:72px;}
+  }
+
+  /* ===================== BREAKPOINTS ===================== */
+  /* drill-down list/detail below 1200px so the detail pane is never squeezed */
+  @media (max-width:1199px){
+    .list-detail-split{grid-template-columns:minmax(0,1fr);}
+    .mobile-back-btn{display:inline-flex;}
+    .list-detail-split:not(.detail-open) #detailPanel{display:none;}
+    .list-detail-split.detail-open > .card:first-child{display:none;}
+    .kpi-row{grid-template-columns:repeat(2, minmax(0,1fr));}
+    .topbar-title span, .avatar-chip .who{display:none;}
+    .avatar-chip{padding-left:0; border-left:none;}
+  }
+  @media (max-width:900px){
+    :root{--fs-body:16px;}
+    .app-shell{grid-template-columns:1fr; padding:0; gap:0;}
+    .sidebar{display:none;}
+    .main{gap:0;}
+    .topbar{border-radius:0; top:0; border-width:0 0 1px; padding:var(--sp-2) var(--sp-4);}
+    .content{padding:var(--sp-4) var(--sp-4) calc(96px + env(safe-area-inset-bottom));}
+    .role-switch{display:none;}
+    .grid-2, .grid-3, .grid-4{grid-template-columns:minmax(0,1fr);}
+    .quick-tiles{grid-template-columns:repeat(2, minmax(0,1fr));}
+    .row-2, .row-3{grid-template-columns:minmax(0,1fr);}
+    .hero{padding:var(--sp-5);}
+    .hero .btn{width:100%;}
+    .banner{flex-wrap:wrap;}
+    .banner > .btn{width:100%;}
+    .podium{gap:var(--sp-2);}
+    .podium-col{width:100px;}
+    .bottom-nav{display:flex;}
+    /* iOS zooms any input under 16px on focus */
+    .input, .field input[type=text], .field input[type=email], .field input[type=password], .field textarea, .field select{font-size:16px;}
+    .card-pad{padding:var(--sp-4);}
+    /* phones and tablets get 44px targets even if the browser misreports the pointer */
+    .btn-sm, .chip{min-height:var(--target);}
+    .announce-del{width:var(--target); height:var(--target);}
+  }
+  @media (min-width:901px){ .bottom-nav, .more-sheet, .more-backdrop{display:none !important;} }
+  @media (max-width:480px){
+    .kpi-row{grid-template-columns:minmax(0,1fr);}
+    .stat{padding:var(--sp-3);}
+    .stat .lbl{font-size:var(--fs-12);}
+    .stat .num{font-size:var(--fs-20);}
+    .tile{flex-direction:column; align-items:flex-start; gap:var(--sp-2);}
+    .podium-col{width:88px;}
+    .podium-name{font-size:var(--fs-12);}
+    .avatar-chip .who{display:none;}
+    .avatar-chip{padding-left:0; border-left:none;}
+    .topbar-title span{display:none;}
+    .login-form-side{padding:var(--sp-4);}
+    .login-form-wrap{padding:var(--sp-6) var(--sp-5);}
+    .lb-bar-wrap{display:none;}
+  }
+
+  /* hover lift only where hover exists */
+  @media (hover:hover) and (prefers-reduced-motion:no-preference){
+    .tile:hover, .type-card:hover{transform:translateY(-2px);}
+    .tile, .type-card{transition:transform var(--dur-fast) ease, border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; scroll-behavior:auto !important;}
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Lewati ke konten utama</a>
+
+<!-- ===================== LOGIN ===================== -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-brand">
+    <div class="login-brand-top">
+      <div class="logo-mark"><img src="assets/logo-mark.png" alt="ParagonCorp" data-fallback="mark"></div>
+      <div class="name">Sumbang Saran<small>Paragon Group</small></div>
+    </div>
+    <div class="login-hero">
+      <div class="eyebrow">Continuous Improvement Platform</div>
+      <h1>Satu ide kecil bisa jadi perbaikan besar.</h1>
+      <p>Ajukan, pantau, dan wujudkan ide perbaikanmu — mulai dari submission, review berjenjang, hingga rekognisi Best SS dan reward, semua dalam satu platform.</p>
+      <div class="login-stats">
+        <div><b>52.514</b><span>Ide diajukan</span></div>
+        <div><b>1.636</b><span>Sudah diimplementasikan</span></div>
+        <div><b>6</b><span>Entitas Paragon Group</span></div>
+      </div>
+      <div class="login-affiliate">
+        <span>Bagian dari</span>
+        <img src="assets/logo-wordmark.png" alt="ParagonCorp" data-fallback="wordmark">
+      </div>
+    </div>
+  </div>
+
+  <main class="login-form-side">
+    <div class="login-form-wrap">
+      <h2>Masuk ke akun Anda</h2>
+      <p class="sub">Gunakan email &amp; password MDP, atau masuk dengan SSO Paracorp.</p>
+      <form onsubmit="event.preventDefault(); doLogin('submitter');" novalidate>
+        <div class="field">
+          <label for="loginEmail">Email</label>
+          <input type="email" id="loginEmail" autocomplete="username" placeholder="nama@paragon-innovation.com" value="dewi.puspita@paragon-innovation.com">
+        </div>
+        <div class="field">
+          <label for="loginPass">Password</label>
+          <input type="password" id="loginPass" autocomplete="current-password" value="demo-password">
+        </div>
+        <div class="login-row-between">
+          <label class="check-label"><input type="checkbox" checked> Ingat saya</label>
+          <a href="#">Lupa password?</a>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Masuk <i data-icon="arrow-right"></i></button>
+        <div class="login-divider">atau</div>
+        <button type="button" class="btn btn-block" onclick="doLogin('submitter')"><i data-icon="lock"></i> Masuk dengan SSO Paracorp</button>
+      </form>
+      <div class="demo-note">
+        <b>Mode demo mock-up</b>
+        Pilih peran untuk melihat tampilan sesuai akses masing-masing:
+        <div class="demo-roles">
+          <button type="button" class="btn btn-sm" onclick="doLogin('submitter')">Submitter</button>
+          <button type="button" class="btn btn-sm" onclick="doLogin('superior')">Superior</button>
+          <button type="button" class="btn btn-sm" onclick="doLogin('admin')">Admin Area</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ===================== APP ===================== -->
+<div class="app-shell hidden" id="appShell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo-mark"><img src="assets/logo-mark.png" alt="ParagonCorp" data-fallback="mark"></div>
+      <div class="brand-name">Sumbang Saran<small>Paragon Group</small></div>
+    </div>
+    <nav aria-label="Navigasi utama">
+      <div class="nav-section-label">Utama</div>
+      <button class="nav-item" data-view="dashboard" onclick="go('dashboard')"><i data-icon="layout"></i><span data-label="home">Beranda</span></button>
+      <button class="nav-item submitter-only" data-view="create" onclick="go('create')"><i data-icon="plus"></i>Ajukan Ide Baru</button>
+      <button class="nav-item" data-view="list" onclick="go('list')"><i data-icon="list"></i><span data-label="list">Ide Saya</span><span class="badge" id="listNavBadge"></span></button>
+      <button class="nav-item" data-view="leaderboard" onclick="go('leaderboard')"><i data-icon="trophy"></i>Leaderboard</button>
+      <button class="nav-item" data-view="learning" onclick="go('learning')"><i data-icon="megaphone"></i>Pengumuman &amp; Belajar</button>
+      <div class="admin-only">
+        <div class="nav-section-label">Administrasi</div>
+        <button class="nav-item" data-view="admin" onclick="go('admin')"><i data-icon="shield"></i>Panel Admin</button>
+        <button class="nav-item" data-view="export" onclick="go('export')"><i data-icon="download"></i>Export Data</button>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="role-note" id="scopeNote"></div>
+      <button class="logout-link" onclick="doLogout()"><i data-icon="logout"></i>Keluar</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-title" id="topbarTitle"></div>
+      <div class="role-switch" role="group" aria-label="Ganti peran demo">
+        <button data-role="submitter" aria-pressed="true" onclick="setRole('submitter')">Submitter</button>
+        <button data-role="superior" aria-pressed="false" onclick="setRole('superior')">Superior</button>
+        <button data-role="admin" aria-pressed="false" onclick="setRole('admin')">Admin Area</button>
+      </div>
+      <div class="topbar-right">
+        <button class="icon-btn" aria-label="Notifikasi, ada yang baru"><i data-icon="bell"></i><span class="dot" aria-hidden="true"></span></button>
+        <div class="avatar-chip">
+          <div class="avatar" id="avatarInit" aria-hidden="true">DP</div>
+          <div class="who"><span id="whoName">Dewi Puspita</span><small id="whoRole">NIP 88213 · Submitter</small></div>
+        </div>
+      </div>
+    </header>
+
+    <main class="content" id="main" tabindex="-1">
+
+      <!-- ============ DASHBOARD ============ -->
+      <section class="view" id="view-dashboard" aria-labelledby="dashHeading">
+        <h1 class="sr-only" id="dashHeading">Beranda</h1>
+
+        <div id="dash-simple">
+          <div class="hero">
+            <div>
+              <h2 id="greetText">Selamat pagi, Dewi</h2>
+              <p>Setiap ide kecil yang kamu ajukan bisa berdampak besar untuk tim. Mengajukan ide butuh kurang dari 3 menit.</p>
+            </div>
+            <button class="btn" onclick="go('create')"><i data-icon="lightbulb"></i> Ajukan Ide Baru</button>
+          </div>
+
+          <div class="quick-tiles">
+            <button class="tile" onclick="go('create')"><span class="t-ic"><i data-icon="file-plus"></i></span><span><span class="lbl">Ajukan Ide</span><span class="sub">Buat SS baru</span></span></button>
+            <button class="tile" onclick="go('list')"><span class="t-ic"><i data-icon="list"></i></span><span><span class="lbl">Ide Saya</span><span class="sub" id="tileListSub">12 pengajuan</span></span></button>
+            <button class="tile" onclick="go('leaderboard')"><span class="t-ic"><i data-icon="trophy"></i></span><span><span class="lbl">Leaderboard</span><span class="sub">Peringkat #44</span></span></button>
+            <button class="tile" onclick="go('learning')"><span class="t-ic"><i data-icon="megaphone"></i></span><span><span class="lbl">Pengumuman</span><span class="sub">3 info baru</span></span></button>
+          </div>
+
+          <div class="stat-row">
+            <div class="stat"><div class="lbl">Ide diajukan</div><div class="num">12</div></div>
+            <div class="stat"><div class="lbl">Disetujui</div><div class="num">7</div></div>
+            <div class="stat"><div class="lbl">Diterapkan</div><div class="num">3</div></div>
+          </div>
+
+          <div class="grid grid-2">
+            <div class="card card-pad">
+              <h2 class="section-title"><i data-icon="alert"></i> Perlu tindakan Anda</h2>
+              <p class="section-sub">Ide yang menunggu revisi atau laporan implementasi dari Anda</p>
+              <div id="todoList"></div>
+            </div>
+            <div class="card card-pad">
+              <h2 class="section-title"><i data-icon="clock"></i> Ide terbaru saya</h2>
+              <p class="section-sub">Tiga pengajuan terakhir</p>
+              <div id="miniSSList"></div>
+              <button class="btn btn-ghost btn-block stack-gap" onclick="go('list')">Lihat semua ide saya <i data-icon="arrow-right"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <div id="dash-analytic" hidden>
+          <div class="scope-banner"><i data-icon="info"></i><div id="scopeBanner"></div></div>
+
+          <div class="kpi-row" id="kpiRow"></div>
+
+          <div class="card card-pad" style="margin-bottom:var(--sp-4);">
+            <h2 class="section-title"><i data-icon="filter"></i> Status pipeline ide</h2>
+            <p class="section-sub">Keputusan atas seluruh ide, dan progres implementasi dari ide yang disetujui</p>
+            <div id="pipeline"></div>
+          </div>
+
+          <div class="grid grid-2">
+            <div class="card card-pad">
+              <h2 class="section-title"><i data-icon="trending"></i> Tren bulanan</h2>
+              <p class="section-sub">Jumlah SS per status, Januari–Juli 2026</p>
+              <div class="chart-box"><canvas id="trendChart" role="img" aria-label="Grafik garis tren bulanan SS diajukan, disetujui, dan diimplementasikan"></canvas></div>
+              <details class="chart-table" id="trendTable"><summary>Lihat sebagai tabel</summary></details>
+            </div>
+            <div class="card card-pad">
+              <h2 class="section-title"><i data-icon="bar"></i> Jenis SS (YTD)</h2>
+              <p class="section-sub">Jumlah ide per Jenis SS, diurutkan dari terbanyak</p>
+              <div class="chart-box"><canvas id="categoryChart" role="img" aria-label="Grafik batang jumlah ide per Jenis SS"></canvas></div>
+              <details class="chart-table" id="categoryTable"><summary>Lihat sebagai tabel</summary></details>
+            </div>
+          </div>
+
+          <div class="grid grid-2 admin-only stack-gap">
+            <div class="card card-pad">
+              <h2 class="section-title"><i data-icon="timer"></i> Lead time per departemen</h2>
+              <p class="section-sub">Rata-rata hari dari Disetujui → Implemented</p>
+              <div class="chart-box"><canvas id="leadTimeChart" role="img" aria-label="Grafik batang lead time per departemen dalam hari"></canvas></div>
+              <details class="chart-table" id="leadTimeTable"><summary>Lihat sebagai tabel</summary></details>
+            </div>
+            <div class="card card-pad">
+              <h2 class="section-title"><i data-icon="users"></i> Involvement rate per area</h2>
+              <p class="section-sub">Submitter unik dibagi total karyawan</p>
+              <div class="chart-box"><canvas id="involvementChart" role="img" aria-label="Grafik batang involvement rate per area dalam persen"></canvas></div>
+              <details class="chart-table" id="involvementTable"><summary>Lihat sebagai tabel</summary></details>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ CREATE ============ -->
+      <section class="view" id="view-create" aria-labelledby="createHeading">
+        <h1 class="page-title" id="createHeading">Ajukan Ide Baru</h1>
+        <p class="page-sub">Lengkapi form berikut untuk mengajukan ide Sumbang Saran. Field bertanda <span class="req">*</span> wajib diisi.</p>
+
+        <div class="banner neutral">
+          <div class="b-ic"><i data-icon="lightbulb"></i></div>
+          <div style="flex:1;">
+            <div class="t">Panduan IAS tersedia</div>
+            <div class="d">Identifikasi Analisa Sebab dan Solusi — bantu susun akar masalah sebelum mengisi form.</div>
+          </div>
+          <button type="button" class="btn btn-sm">Buka Panduan</button>
+        </div>
+
+        <form class="card card-pad" id="createForm" novalidate onsubmit="event.preventDefault(); submitIdea(event.submitter);">
+          <div class="form-section-label"><span class="num">1</span> Informasi Dasar</div>
+          <div class="row-3">
+            <div class="field"><label for="cId">SS ID</label><input type="text" id="cId" value="SS-2026-00843" disabled></div>
+            <div class="field"><label for="cSup">Superior <span class="hint">(otomatis)</span></label><input type="text" id="cSup" value="Ahmad Fauzi — Sect. Head QA" disabled></div>
+            <div class="field"><label for="cHSup">High Superior <span class="hint">(otomatis)</span></label><input type="text" id="cHSup" value="Sri Wulandari — Watcher" disabled></div>
+          </div>
+          <div class="row-2">
+            <div class="field" data-required><label for="cTitle">Judul SS <span class="req">*</span></label><input type="text" id="cTitle" placeholder="Contoh: Digitalisasi form tanda terima barang promosi"><div class="field-error" id="cTitle-err"><i data-icon="alert"></i>Judul SS wajib diisi.</div></div>
+            <div class="field"><label for="cMethod">Metode Pengerjaan <span class="req">*</span></label>
+              <select id="cMethod"><option>Dikerjakan sendiri</option><option>Order ke Workshop (CREM)</option><option>Order ke Workshop (MAI Plant)</option><option>Order ke SHE</option><option>Koordinasi tim IT (Tiket GLPI)</option></select>
+            </div>
+          </div>
+          <div class="field" id="cJenisField">
+            <div class="label" id="cJenisLbl">Jenis SS <span class="req">*</span> <span class="hint">(boleh lebih dari satu)</span></div>
+            <div class="chip-select" role="group" aria-labelledby="cJenisLbl" id="cJenis" data-chips></div>
+            <div class="field-error"><i data-icon="alert"></i>Pilih minimal satu Jenis SS.</div>
+          </div>
+
+          <hr class="section-divider">
+          <div class="form-section-label"><span class="num">2</span> Identifikasi Masalah</div>
+          <div class="row-2">
+            <div class="field" data-required><label for="cBefore">Kondisi Sebelumnya <span class="req">*</span></label><textarea id="cBefore" placeholder="Jelaskan kondisi/masalah saat ini, termasuk frekuensi, jumlah, dan lead time"></textarea><div class="field-error"><i data-icon="alert"></i>Kondisi sebelumnya wajib diisi.</div></div>
+            <div class="field"><label for="cRoot">Akar Penyebab Masalah</label><textarea id="cRoot" placeholder="Hasil analisa IAS"></textarea></div>
+          </div>
+          <div class="field" data-required-file>
+            <div class="label" id="cPhotoLbl">Foto Before <span class="req">*</span> <span class="hint">(minimal 1 foto)</span></div>
+            <label class="upload-box"><input type="file" id="cPhoto" accept="image/jpeg,image/png" multiple aria-labelledby="cPhotoLbl" onchange="showFileName(this)"><b><i data-icon="upload"></i> Pilih atau tarik foto ke sini</b>JPG/PNG, maks 5MB<span class="file-name"></span></label>
+            <div class="field-error"><i data-icon="alert"></i>Unggah minimal 1 foto before.</div>
+          </div>
+
+          <hr class="section-divider">
+          <div class="form-section-label"><span class="num">3</span> Ide Improvement</div>
+          <div class="field" data-required><label for="cIdea">Ide Improvement <span class="req">*</span></label><textarea id="cIdea" placeholder="Uraikan ide perbaikan yang diusulkan"></textarea><div class="field-error"><i data-icon="alert"></i>Ide improvement wajib diisi.</div></div>
+          <div class="row-3">
+            <div class="field"><label for="cType">Jenis Improvement <span class="req">*</span></label><select id="cType"><option>System — New</option><option>Process — Modifikasi</option><option>People — Duplikasi</option></select></div>
+            <div class="field" data-required><label for="cArea">Area Improvement <span class="req">*</span></label><input type="text" id="cArea" placeholder="Contoh: Gudang Bahan Baku"><div class="field-error"><i data-icon="alert"></i>Area wajib diisi.</div></div>
+            <div class="field" data-required><label for="cBenefit">Manfaat Tangible <span class="req">*</span> <span class="hint">(kuantitatif)</span></label><input type="text" id="cBenefit" placeholder="Contoh: Hemat 4 jam/hari"><div class="field-error"><i data-icon="alert"></i>Manfaat tangible wajib diisi.</div></div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-ghost" onclick="toast('Draf disimpan (simulasi).')">Simpan Draf</button>
+            <button type="submit" class="btn btn-primary">Submit untuk Review Superior <i data-icon="arrow-right"></i></button>
+          </div>
+        </form>
+      </section>
+
+      <!-- ============ REPORT ============ -->
+      <section class="view" id="view-report" aria-labelledby="reportHeading">
+        <h1 class="page-title" id="reportHeading">Submit Laporan Implementasi</h1>
+        <p class="page-sub">Lengkapi hasil implementasi untuk <b id="reportSSId"></b>. Field bertanda <span class="req">*</span> wajib diisi.</p>
+
+        <form class="card card-pad" id="reportForm" novalidate onsubmit="event.preventDefault(); submitReport(event.submitter);">
+          <div class="form-section-label"><span class="num">1</span> Data Asli <span class="hint">(tidak dapat diubah)</span></div>
+          <div class="row-3">
+            <div class="field"><label for="rptId">SS ID</label><input type="text" id="rptId" disabled></div>
+            <div class="field"><label for="rptTitle">Judul SS</label><input type="text" id="rptTitle" disabled></div>
+            <div class="field"><label for="rptMethod">Metode Pengerjaan</label><input type="text" id="rptMethod" value="Order ke Workshop (CREM)" disabled></div>
+          </div>
+
+          <hr class="section-divider">
+          <div class="form-section-label"><span class="num">2</span> Hasil Implementasi</div>
+          <div class="field" data-required-file>
+            <div class="label" id="rPhotoLbl">Foto After <span class="req">*</span> <span class="hint">(minimal 1 foto, dari sudut yang sama dengan foto before)</span></div>
+            <label class="upload-box"><input type="file" id="rPhoto" accept="image/jpeg,image/png" multiple aria-labelledby="rPhotoLbl" onchange="showFileName(this)"><b><i data-icon="upload"></i> Pilih atau tarik foto ke sini</b>JPG/PNG, maks 5MB<span class="file-name"></span></label>
+            <div class="field-error"><i data-icon="alert"></i>Unggah minimal 1 foto after.</div>
+          </div>
+          <div class="row-2">
+            <div class="field" data-required><label for="rAfter">Kondisi Setelahnya <span class="req">*</span></label><textarea id="rAfter">Form kini digital, tersimpan otomatis, tidak ada lagi dokumen hilang</textarea><div class="field-error"><i data-icon="alert"></i>Kondisi setelahnya wajib diisi.</div></div>
+            <div class="field" data-required><label for="rDone">Waktu Selesai <span class="req">*</span></label><input type="text" id="rDone" value="21 Jul 2026"><div class="field-error"><i data-icon="alert"></i>Waktu selesai wajib diisi.</div></div>
+          </div>
+          <div class="row-3">
+            <div class="field" data-required><label for="rFreq">Frekuensi After <span class="req">*</span></label><input type="text" id="rFreq" placeholder="Contoh: 0x/bulan"><div class="field-error"><i data-icon="alert"></i>Wajib diisi.</div></div>
+            <div class="field" data-required><label for="rQty">Jumlah After <span class="req">*</span></label><input type="text" id="rQty" placeholder="Contoh: 0 dokumen hilang"><div class="field-error"><i data-icon="alert"></i>Wajib diisi.</div></div>
+            <div class="field" data-required><label for="rLead">Lead Time After <span class="req">*</span></label><input type="text" id="rLead" placeholder="Contoh: 2 menit/dokumen"><div class="field-error"><i data-icon="alert"></i>Wajib diisi.</div></div>
+          </div>
+          <div class="row-2">
+            <div class="field" data-required><label for="rTangible">Manfaat Tangible <span class="req">*</span></label><input type="text" id="rTangible" placeholder="Contoh: Hemat 4 jam/hari"><div class="field-error"><i data-icon="alert"></i>Wajib diisi.</div></div>
+            <div class="field"><label for="rIntangible">Manfaat Intangible</label><input type="text" id="rIntangible" placeholder="Contoh: Dokumentasi lebih rapi"></div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-ghost" onclick="go('list')">Batal</button>
+            <button type="submit" class="btn btn-primary">Submit Laporan untuk Review <i data-icon="arrow-right"></i></button>
+          </div>
+        </form>
+      </section>
+
+      <!-- ============ LIST ============ -->
+      <section class="view" id="view-list" aria-labelledby="listTitle">
+        <h1 class="page-title" id="listTitle">Ide Saya</h1>
+        <p class="page-sub" id="listSub">Pilih salah satu ide untuk melihat detail, riwayat, dan chat review.</p>
+        <div class="list-detail-split" id="listSplit">
+          <div class="card" style="overflow:hidden;">
+            <table class="responsive-table">
+              <thead><tr><th scope="col">SS</th><th scope="col" class="col-jenis">Jenis</th><th scope="col">Status</th><th scope="col">Diajukan</th></tr></thead>
+              <tbody id="ssTableBody"></tbody>
+            </table>
+          </div>
+          <div class="card card-pad" id="detailPanel" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <!-- ============ LEADERBOARD ============ -->
+      <section class="view" id="view-leaderboard" aria-labelledby="lbHeading">
+        <h1 class="page-title" id="lbHeading">Leaderboard</h1>
+        <p class="page-sub">Top 10 tiap kategori — peringkat Anda tetap ditampilkan meski di luar Top 10.</p>
+        <div class="lb-tabs" id="lbTabs" role="group" aria-label="Kategori leaderboard"></div>
+        <div class="podium-card" id="podium"></div>
+        <div class="card card-pad" id="lbBody"></div>
+      </section>
+
+      <!-- ============ LEARNING ============ -->
+      <section class="view" id="view-learning" aria-labelledby="learnHeading">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:var(--sp-4); flex-wrap:wrap;">
+          <div>
+            <h1 class="page-title" id="learnHeading">Pengumuman &amp; Belajar</h1>
+            <p class="page-sub">Info terbaru, materi, dan tantangan mingguan.</p>
+          </div>
+          <button class="btn btn-primary admin-only" id="announceToggle" aria-expanded="false" aria-controls="announceForm" onclick="toggleAnnounceForm()"><i data-icon="plus"></i><span id="announceToggleLabel">Buat Pengumuman</span></button>
+        </div>
+
+        <form class="card card-pad" id="announceForm" hidden novalidate style="margin-bottom:var(--sp-4);" onsubmit="event.preventDefault(); publishAnnouncement(event.submitter);">
+          <div class="form-section-label"><span class="num">+</span> Pengumuman Baru</div>
+          <div class="row-2">
+            <div class="field"><label for="anTipe">Tipe Pengumuman <span class="req">*</span></label><select id="anTipe"><option>Event</option><option>Informasi</option><option>Reminder</option></select></div>
+            <div class="row-2" style="gap:var(--sp-2);">
+              <div class="field"><label for="anStart">Tampil mulai <span class="req">*</span></label><input type="text" id="anStart" placeholder="dd/mm/yyyy" value="03/08/2026"></div>
+              <div class="field"><label for="anEnd">Sampai <span class="req">*</span></label><input type="text" id="anEnd" placeholder="dd/mm/yyyy" value="17/08/2026"></div>
+            </div>
+          </div>
+          <div class="field" data-required><label for="anJudul">Judul <span class="req">*</span></label><input type="text" id="anJudul" placeholder="Contoh: Workshop 5R bulan Agustus"><div class="field-error"><i data-icon="alert"></i>Judul wajib diisi.</div></div>
+          <div class="field" data-required><label for="anIsi">Isi <span class="req">*</span></label><textarea id="anIsi" placeholder="Deskripsi/isi pengumuman..."></textarea><div class="field-error"><i data-icon="alert"></i>Isi pengumuman wajib diisi.</div></div>
+          <div class="field">
+            <div class="label" id="anMediaLbl">Media <span class="hint">(opsional)</span></div>
+            <label class="upload-box"><input type="file" accept="image/jpeg,image/png" aria-labelledby="anMediaLbl" onchange="showFileName(this)"><b><i data-icon="upload"></i> Pilih foto/poster</b>JPG/PNG, maks 5MB<span class="file-name"></span></label>
+          </div>
+          <div class="field">
+            <div class="label" id="anAudLbl">Target Audiens <span class="hint">(kosong = semua)</span></div>
+            <div class="chip-select" role="group" aria-labelledby="anAudLbl" id="anAudience" data-chips></div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-ghost" onclick="toggleAnnounceForm()">Batal</button>
+            <button type="submit" class="btn btn-primary"><i data-icon="megaphone"></i> Terbitkan</button>
+          </div>
+        </form>
+
+        <div class="grid grid-3" id="announceGrid"></div>
+      </section>
+
+      <!-- ============ ADMIN ============ -->
+      <section class="view" id="view-admin" aria-labelledby="adminHeading">
+        <h1 class="page-title" id="adminHeading">Panel Admin — Area Jakarta</h1>
+        <p class="page-sub">Scope data terbatas pada Area Kerja Anda. Elemen di luar scope tidak ditampilkan.</p>
+        <div class="kpi-row">
+          <div class="kpi"><div class="label">Akun aktif</div><div class="value">1.204</div><div class="delta up"><i data-icon="trending"></i>+18 bulan ini</div></div>
+          <div class="kpi"><div class="label">SS menunggu review</div><div class="value">37</div><div class="delta">9 SS melewati SLA H+7</div></div>
+          <div class="kpi"><div class="label">Reward diproses</div><div class="value">Rp4,2 jt</div><div class="delta">Cut-off 17 Jul</div></div>
+          <div class="kpi"><div class="label">Nominasi Best SS</div><div class="value">6</div><div class="delta">Skor ≥ 15</div></div>
+        </div>
+        <div class="grid grid-2">
+          <div class="card card-pad">
+            <h2 class="section-title">Manajemen akun</h2>
+            <p class="section-sub">Kelola akun dalam scope Area Kerja Jakarta</p>
+            <div class="scroll-x"><table>
+              <thead><tr><th scope="col">Nama</th><th scope="col">Peran</th><th scope="col">Status</th><th scope="col"><span class="sr-only">Aksi</span></th></tr></thead>
+              <tbody>
+                <tr><td>Dewi Puspita</td><td>Submitter</td><td><span class="pill approved"><i data-icon="check"></i>Aktif</span></td><td><button class="btn btn-sm">Kelola</button></td></tr>
+                <tr><td>Ahmad Fauzi</td><td>Superior</td><td><span class="pill approved"><i data-icon="check"></i>Aktif</span></td><td><button class="btn btn-sm">Kelola</button></td></tr>
+                <tr><td>Rian Saputra</td><td>Submitter</td><td><span class="pill neutral"><i data-icon="x"></i>Nonaktif</span></td><td><button class="btn btn-sm">Kelola</button></td></tr>
+              </tbody>
+            </table></div>
+          </div>
+          <div class="card card-pad">
+            <h2 class="section-title">Chat admin ↔ user</h2>
+            <p class="section-sub">Thread terpisah dari chat review</p>
+            <div class="chat-thread" style="max-height:220px;">
+              <div class="msg them"><div class="who">Dewi Puspita</div>Pak, SS saya sudah 20 hari belum direview, mohon infonya.<div class="time">14.02</div></div>
+              <div class="msg me"><div class="who">Anda (Admin)</div>Baik, saya cek ke Superior terkait ya, akan saya update di sini.<div class="time">14.10</div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ EXPORT ============ -->
+      <section class="view" id="view-export" aria-labelledby="exportHeading">
+        <h1 class="page-title" id="exportHeading">Export Data</h1>
+        <p class="page-sub">Unduh data SS, laporan implementasi, atau analitik leaderboard sesuai filter &amp; scope Anda.</p>
+
+        <div class="card card-pad" style="margin-bottom:var(--sp-4);">
+          <h2 class="section-title"><i data-icon="filter"></i> Filter data</h2>
+          <p class="section-sub">Filter berlaku untuk seluruh jenis export di bawah</p>
+          <div class="row-2">
+            <div class="field"><label for="fltStart">Tanggal awal</label><input type="text" id="fltStart" placeholder="dd/mm/yyyy" value="01/01/2026" oninput="recalcExport()"></div>
+            <div class="field"><label for="fltEnd">Tanggal akhir</label><input type="text" id="fltEnd" placeholder="dd/mm/yyyy" value="31/07/2026" oninput="recalcExport()"></div>
+          </div>
+          <div class="row-3">
+            <div class="field"><label for="fltDirektorat">Direktorat</label><select id="fltDirektorat" onchange="recalcExport()"><option value="">Semua Direktorat</option><option>Manufacturing</option><option>Marketing</option><option>Supply Chain</option><option>Human Capital</option><option>Finance</option></select></div>
+            <div class="field"><label for="fltDepartemen">Departemen</label><select id="fltDepartemen" onchange="recalcExport()"><option value="">Semua Departemen</option><option>Powder Factory</option><option>Liquid Factory</option><option>Semisolid Factory</option><option>Warehouse</option><option>RnD</option><option>Quality</option></select></div>
+            <div class="field"><label for="fltDivisi">Divisi</label><select id="fltDivisi" onchange="recalcExport()"><option value="">Semua Divisi</option><option>Produksi</option><option>Quality Assurance</option><option>Quality Control</option><option>PPIC</option><option>Maintenance</option></select></div>
+          </div>
+          <div class="row-2">
+            <div class="field"><label for="fltArea">Area kerja / lokasi</label><select id="fltArea" onchange="recalcExport()"><option value="">Semua Lokasi</option><option>Head Office</option><option>Plant J1</option><option>Plant J2</option><option>Plant J3</option><option>Area Jakarta</option><option>Area Bekasi</option><option>Area Bandung</option></select></div>
+            <div class="field"><label for="fltSuperior">Superior</label><select id="fltSuperior" onchange="recalcExport()"><option value="">Semua Superior</option><option>Ahmad Fauzi</option><option>Sri Wulandari</option><option>Budi Santoso</option></select></div>
+          </div>
+          <div class="field">
+            <div class="label" id="fltStatusLbl">Status SS <span class="hint">(bisa pilih lebih dari satu)</span></div>
+            <div class="chip-select" role="group" aria-labelledby="fltStatusLbl" id="fltStatusChips" data-chips data-onchange="recalcExport"></div>
+          </div>
+          <div class="field">
+            <div class="label" id="fltJenisLbl">Jenis SS <span class="hint">(bisa pilih lebih dari satu)</span></div>
+            <div class="chip-select" role="group" aria-labelledby="fltJenisLbl" id="fltJenisChips" data-chips data-onchange="recalcExport"></div>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="resetExportFilters()"><i data-icon="rotate"></i> Reset semua filter</button>
+        </div>
+
+        <div class="card card-pad" style="margin-bottom:var(--sp-4);">
+          <h2 class="section-title"><i data-icon="package"></i> Jenis export</h2>
+          <p class="section-sub">Format file menyesuaikan jenis data</p>
+          <div class="grid grid-3" role="radiogroup" aria-label="Jenis export" id="exportTypeCards">
+            <button type="button" class="type-card" role="radio" aria-checked="true" data-type="submit" onclick="selectExportType('submit')"><span class="t-ic"><i data-icon="table"></i></span><span class="lbl">Data Submit SS</span><span class="sub">Excel &amp; CSV · seluruh field SS sesuai filter</span></button>
+            <button type="button" class="type-card" role="radio" aria-checked="false" data-type="report" onclick="selectExportType('report')"><span class="t-ic"><i data-icon="file-text"></i></span><span class="lbl">Laporan Implementasi</span><span class="sub">PDF per SS ID · bulk download (khusus status Implemented)</span></button>
+            <button type="button" class="type-card" role="radio" aria-checked="false" data-type="leaderboard" onclick="selectExportType('leaderboard')"><span class="t-ic"><i data-icon="trophy"></i></span><span class="lbl">Analisis Leaderboard</span><span class="sub">Excel &amp; CSV · ranking &amp; skor per kategori</span></button>
+          </div>
+        </div>
+
+        <div class="card card-pad">
+          <h2 class="section-title"><i data-icon="eye"></i> Preview data</h2>
+          <p class="section-sub" id="exportCountText" aria-live="polite"></p>
+          <div class="scroll-x" style="border-radius:var(--r-sm); border:1px solid var(--border);">
+            <table>
+              <thead><tr><th scope="col">SS ID</th><th scope="col">Status</th><th scope="col">Direktorat</th><th scope="col">Departemen</th><th scope="col">Tanggal</th></tr></thead>
+              <tbody id="exportPreviewBody"></tbody>
+            </table>
+          </div>
+          <div id="exportAsyncNote" class="note stack-gap" hidden><i data-icon="info"></i><span>Data lebih dari 1.000 baris — export diproses di background. Anda akan menerima email saat file siap diunduh.</span></div>
+          <div class="form-actions" style="margin-top:var(--sp-4);">
+            <button type="button" class="btn btn-primary" onclick="doExport(this)"><i data-icon="download"></i> Export sekarang</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ===================== MOBILE BOTTOM NAV ===================== -->
+  <nav class="bottom-nav" aria-label="Navigasi utama (mobile)">
+    <button class="bn-item" data-view="dashboard" onclick="go('dashboard')"><i data-icon="layout"></i><span data-label="home">Beranda</span></button>
+    <button class="bn-item" data-view="list" onclick="go('list')"><i data-icon="list"></i><span data-label="listShort">Ide Saya</span><span class="bn-count" id="bnListCount" hidden></span></button>
+    <button class="bn-item primary submitter-only" data-view="create" onclick="go('create')"><span class="bn-fab"><i data-icon="plus"></i></span>Ajukan</button>
+    <button class="bn-item" data-view="leaderboard" onclick="go('leaderboard')"><i data-icon="trophy"></i>Peringkat</button>
+    <button class="bn-item" aria-haspopup="dialog" aria-controls="moreSheet" onclick="openMoreSheet()"><i data-icon="more"></i>Lainnya</button>
+  </nav>
+
+  <div class="more-backdrop" id="moreBackdrop" onclick="closeMoreSheet()"></div>
+  <div class="more-sheet" id="moreSheet" role="dialog" aria-modal="true" aria-labelledby="moreTitle">
+    <div class="handle" aria-hidden="true"></div>
+    <div class="more-sheet-title" id="moreTitle">Menu lainnya</div>
+    <button class="more-item" onclick="closeMoreSheet(); go('learning')"><i data-icon="megaphone"></i>Pengumuman &amp; Belajar</button>
+    <div class="admin-only">
+      <button class="more-item" onclick="closeMoreSheet(); go('admin')"><i data-icon="shield"></i>Panel Admin</button>
+      <button class="more-item" onclick="closeMoreSheet(); go('export')"><i data-icon="download"></i>Export Data</button>
+    </div>
+    <div class="more-section-label">Mode demo — ganti peran</div>
+    <div class="more-role-row" role="group" aria-label="Ganti peran demo">
+      <button class="btn btn-sm" data-role="submitter" aria-pressed="true" onclick="setRole('submitter')">Submitter</button>
+      <button class="btn btn-sm" data-role="superior" aria-pressed="false" onclick="setRole('superior')">Superior</button>
+      <button class="btn btn-sm" data-role="admin" aria-pressed="false" onclick="setRole('admin')">Admin Area</button>
+    </div>
+    <hr class="more-divider">
+    <button class="more-item danger" onclick="closeMoreSheet(); doLogout();"><i data-icon="logout"></i>Keluar</button>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+/* ============ ICONS (Lucide paths, one consistent set) ============ */
+const ICONS = {
+  'arrow-right':'<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+  'chevron-left':'<path d="m15 18-6-6 6-6"/>',
+  lock:'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  layout:'<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>',
+  plus:'<path d="M12 5v14"/><path d="M5 12h14"/>',
+  list:'<path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/>',
+  trophy:'<path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M17 6h2a2 2 0 0 1 0 4h-1"/><path d="M7 6H5a2 2 0 0 0 0 4h1"/>',
+  megaphone:'<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
+  shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>',
+  download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
+  upload:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/>',
+  logout:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
+  bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+  lightbulb:'<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/>',
+  'file-plus':'<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M9 15h6"/><path d="M12 18v-6"/>',
+  'file-text':'<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/>',
+  clock:'<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+  alert:'<circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/>',
+  info:'<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+  filter:'<path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/>',
+  trending:'<path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/>',
+  bar:'<path d="M3 3v18h18"/><path d="M7 16h8"/><path d="M7 11h12"/><path d="M7 6h5"/>',
+  timer:'<path d="M10 2h4"/><path d="m12 14 3-3"/><circle cx="12" cy="14" r="8"/>',
+  users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  send:'<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+  check:'<path d="M20 6 9 17l-5-5"/>',
+  'check-circle':'<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>',
+  x:'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  'x-circle':'<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>',
+  pencil:'<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>',
+  search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+  award:'<circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/>',
+  wrench:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+  eye:'<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+  trash:'<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+  rotate:'<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
+  package:'<path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
+  table:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/>',
+  target:'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+  calendar:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>',
+  more:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
+  inbox:'<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
+};
+function icon(name){ return `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${ICONS[name]||''}</svg>`; }
+function hydrateIcons(root=document){
+  root.querySelectorAll('i[data-icon]').forEach(el=>{ el.outerHTML = icon(el.dataset.icon); });
+}
+
+/* logo fallback: the base64 PNGs were moved to /assets (one copy, cacheable) */
+document.querySelectorAll('img[data-fallback]').forEach(img=>{
+  img.addEventListener('error', ()=>{
+    const span = document.createElement('span');
+    if(img.dataset.fallback==='mark'){ span.className='logo-fallback'; span.textContent='P'; }
+    else { span.className='wordmark-fallback'; span.textContent='ParagonCorp'; }
+    span.setAttribute('role','img'); span.setAttribute('aria-label', img.alt);
+    img.replaceWith(span);
+  }, {once:true});
+});
+
+/* ============ FORMAT (id-ID everywhere) ============ */
+const nf = new Intl.NumberFormat('id-ID');
+const fmt = n => nf.format(n);
+const pct = n => new Intl.NumberFormat('id-ID',{maximumFractionDigits:1}).format(n)+'%';
+const rpJt = n => 'Rp'+new Intl.NumberFormat('id-ID',{maximumFractionDigits:1}).format(n)+' jt';
+function nowTime(){ const d=new Date(); return String(d.getHours()).padStart(2,'0')+'.'+String(d.getMinutes()).padStart(2,'0'); }
+function esc(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ============ DATA ============ */
+const JENIS_SS = ['Productivity','Safety','Quality','Cost Reduction','Delivery','Morale','Environment','Penerapan 5R'];
+
+const pipeline = {
+  total:52514,
+  decision:[
+    {label:'Disetujui', value:11570, color:'var(--series-approved)'},
+    {label:'Ditolak', value:26699, color:'var(--series-rejected)'},
+    {label:'Belum diputuskan', value:14245, color:'var(--series-neutral)'},
+  ],
+  approvedTotal:11570,
+  implementation:[
+    {label:'Implemented', value:1636, color:'var(--series-implemented)'},
+    {label:'Laporan direview', value:599, color:'var(--series-submitted)'},
+    {label:'Belum ada laporan', value:9335, color:'var(--series-neutral)'},
+  ],
+};
+
+const kpiSets = {
+  superior:[
+    {label:'Menunggu review Anda', value:'9', delta:'3 mendekati SLA', spark:[4,6,5,7,8,10,9]},
+    {label:'Submitter binaan aktif', value:'14', delta:'dari 14 anggota tim', spark:[12,12,13,13,14,14,14]},
+    {label:'Approval rate', value:pct(71), delta:'+4 poin vs bulan lalu', up:true, spark:[60,62,65,66,68,70,71]},
+    {label:'Rata-rata lead time', value:'6,2 hari', delta:'Target 7 hari', up:true, spark:[8.1,7.8,7.2,7,6.8,6.5,6.2]},
+  ],
+  admin:[
+    {label:'Total SS area', value:fmt(3481), delta:'+120 bulan ini', up:true, spark:[2800,2950,3050,3150,3280,3390,3481]},
+    {label:'Involvement rate', value:pct(34), delta:'dari headcount', spark:[28,29,30,31,32,33,34]},
+    {label:'Export berhasil', value:pct(99.7), delta:'30 hari terakhir', up:true, spark:[92,94,96,97,98,99,99.7]},
+    {label:'Reward cair', value:rpJt(4.2), delta:'Cut-off 17 Jul', spark:[2.1,2.6,3,3.3,3.7,4,4.2]},
+  ],
+};
+
+let ssRecords = [
+  {id:'SS-2026-00842', title:'Digitalisasi form tanda terima barang', cat:'Productivity', status:'review_report', date:'21 Jul 2026',
+    chat:[{who:'Dewi Puspita', side:'them', text:'Pak, laporan implementasi sudah saya submit, mohon direview.', time:'09.12'},{side:'sys', text:'Dewi Puspita mengirim laporan implementasi', time:'09.12'}]},
+  {id:'SS-2026-00838', title:'Simplifikasi checklist mixing area', cat:'Safety', status:'revise_idea', date:'18 Jul 2026',
+    chat:[{who:'Dewi Puspita', side:'them', text:'Pak, ini ide untuk checklist mixing yang lebih ringkas.', time:'10.00'},{who:'Ahmad Fauzi (Superior)', side:'me', text:'Konsepnya oke, tapi tolong tambahkan data frekuensi insiden sebelumnya sebagai pembanding ya.', time:'11.20'},{side:'sys', text:'Ahmad Fauzi meminta revisi ide', time:'11.20'}]},
+  {id:'SS-2026-00810', title:'Standarisasi label bahan baku gudang', cat:'Penerapan 5R', status:'approved', date:'15 Jul 2026',
+    chat:[{who:'Dewi Puspita', side:'them', text:'Mohon direview Pak, untuk standarisasi label gudang.', time:'08.40'},{side:'sys', text:'Ahmad Fauzi menyetujui ide ini', time:'13.05'},{who:'Ahmad Fauzi (Superior)', side:'me', text:'Disetujui, silakan lanjut implementasi. Ditunggu laporannya ya.', time:'13.05'}]},
+  {id:'SS-2026-00799', title:'Otomasi rekap absensi shift malam', cat:'Productivity', status:'implemented', date:'2 Jul 2026',
+    chat:[{who:'Dewi Puspita', side:'them', text:'Laporan implementasi absensi shift malam, mohon direview.', time:'09.00'},{side:'sys', text:'Ahmad Fauzi menyetujui laporan — status Implemented', time:'15.30'},{who:'Ahmad Fauzi (Superior)', side:'me', text:'Mantap, hasil implementasinya jelas terlihat. Approved!', time:'15.30'}]},
+  {id:'SS-2026-00790', title:'Redesain layout gudang B3', cat:'Safety', status:'revise_report', date:'27 Jun 2026',
+    chat:[{who:'Dewi Puspita', side:'them', text:'Laporan implementasi redesain gudang B3, mohon direview.', time:'09.30'},{who:'Ahmad Fauzi (Superior)', side:'me', text:'Foto after belum jelas menunjukkan perubahan layout. Tolong tambahkan foto dari sudut yang sama dengan foto before.', time:'14.00'},{side:'sys', text:'Ahmad Fauzi meminta revisi laporan', time:'14.00'}]},
+  {id:'SS-2026-00777', title:'Pengurangan waste kemasan sekunder', cat:'Cost Reduction', status:'rejected', date:'28 Jun 2026',
+    chat:[{who:'Dewi Puspita', side:'them', text:'Ide untuk mengurangi waste kemasan sekunder di line 2.', time:'10.15'},{who:'Ahmad Fauzi (Superior)', side:'me', text:'Konsep serupa sudah pernah diimplementasikan tahun lalu (SS-2025-00312) dan tidak efektif. Untuk saat ini tidak dilanjutkan ya.', time:'16.40'},{side:'sys', text:'Ahmad Fauzi menolak ide ini', time:'16.40'}]},
+  {id:'SS-2026-00755', title:'Checklist keselamatan area mixing', cat:'Safety', status:'submitted', date:'20 Jun 2026',
+    chat:[{who:'Dewi Puspita', side:'them', text:'Selamat pagi Pak, mohon direview untuk ide SS ini.', time:'09.12'}]},
+];
+let nextSeq = 843;
+
+/* one status vocabulary, one colour per meaning; every pill has icon + label */
+const statusMeta = {
+  submitted:    {label:'Menunggu Review',         tone:'wait',     ic:'clock'},
+  revise_idea:  {label:'Perlu Revisi Ide',        tone:'revise',   ic:'pencil'},
+  approved:     {label:'Disetujui',               tone:'approved', ic:'check-circle'},
+  rejected:     {label:'Ditolak',                 tone:'rejected', ic:'x-circle'},
+  review_report:{label:'Menunggu Review Laporan', tone:'wait',     ic:'search'},
+  revise_report:{label:'Laporan Perlu Revisi',    tone:'revise',   ic:'pencil'},
+  implemented:  {label:'Implemented',             tone:'done',     ic:'award'},
+};
+const pill = s => `<span class="pill ${statusMeta[s].tone}">${icon(statusMeta[s].ic)}${statusMeta[s].label}</span>`;
+const STAGES = ['Pengajuan ide','Implementasi','Review laporan','Selesai'];
+const stageOf = s => ({submitted:0, revise_idea:0, rejected:0, approved:1, review_report:2, revise_report:2, implemented:3})[s] ?? 0;
+const needsSuperiorAction = s => s==='submitted' || s==='review_report';
+const needsSubmitterAction = s => s==='revise_idea' || s==='revise_report' || s==='approved';
+
+const lbCategories = [
+  {key:'submitter', label:'Top Submitter'}, {key:'approved', label:'Top Approved'}, {key:'implemented', label:'Top Implemented'},
+  {key:'learner', label:'Top Learner'}, {key:'challenger', label:'Top Challenger'}, {key:'bestss', label:'Best SS'},
+];
+const lbData = {
+  list:[
+    {name:'Inno Vibes Team', sub:'Plant J2', score:1300}, {name:'AGZ (Athaya)', sub:'Area Bekasi', score:1180},
+    {name:'Glam Squad', sub:'HO Marketing', score:1020}, {name:'Neo Gen', sub:'Plant J1', score:860},
+    {name:'Professor Cuan', sub:'Area Bandung', score:700}, {name:'Americano Crew', sub:'Area Batam', score:700},
+    {name:'The Powerpuff Girls', sub:'Plant J4', score:700},
+  ],
+  me:{rank:44, name:'Dewi Puspita (Anda)', sub:'Area Jakarta', score:120},
+};
+
+const exportPreviewData = [
+  {id:'SS-2026-00842', status:'review_report', direktorat:'Manufacturing', departemen:'Warehouse', divisi:'PPIC', area:'Area Jakarta', superior:'Ahmad Fauzi', jenis:'Productivity', date:'21/07/2026'},
+  {id:'SS-2026-00838', status:'revise_idea', direktorat:'Manufacturing', departemen:'Quality', divisi:'Quality Assurance', area:'Plant J2', superior:'Ahmad Fauzi', jenis:'Safety', date:'18/07/2026'},
+  {id:'SS-2026-00810', status:'approved', direktorat:'Supply Chain', departemen:'Warehouse', divisi:'PPIC', area:'Head Office', superior:'Sri Wulandari', jenis:'Penerapan 5R', date:'15/07/2026'},
+  {id:'SS-2026-00799', status:'implemented', direktorat:'Human Capital', departemen:'RnD', divisi:'Produksi', area:'Plant J1', superior:'Budi Santoso', jenis:'Productivity', date:'02/07/2026'},
+  {id:'SS-2026-00790', status:'revise_report', direktorat:'Manufacturing', departemen:'Semisolid Factory', divisi:'Maintenance', area:'Plant J3', superior:'Ahmad Fauzi', jenis:'Safety', date:'27/06/2026'},
+  {id:'SS-2026-00777', status:'rejected', direktorat:'Marketing', departemen:'Liquid Factory', divisi:'Quality Control', area:'Area Bekasi', superior:'Sri Wulandari', jenis:'Cost Reduction', date:'28/06/2026'},
+  {id:'SS-2026-00755', status:'submitted', direktorat:'Manufacturing', departemen:'Powder Factory', divisi:'Produksi', area:'Area Bandung', superior:'Ahmad Fauzi', jenis:'Safety', date:'20/06/2026'},
+  {id:'SS-2026-00701', status:'implemented', direktorat:'Finance', departemen:'Quality', divisi:'Quality Assurance', area:'Head Office', superior:'Budi Santoso', jenis:'Quality', date:'11/06/2026'},
+  {id:'SS-2026-00688', status:'approved', direktorat:'Supply Chain', departemen:'Warehouse', divisi:'PPIC', area:'Plant J2', superior:'Sri Wulandari', jenis:'Delivery', date:'02/06/2026'},
+  {id:'SS-2026-00654', status:'implemented', direktorat:'Manufacturing', departemen:'Semisolid Factory', divisi:'Maintenance', area:'Plant J1', superior:'Ahmad Fauzi', jenis:'Environment', date:'22/05/2026'},
+];
+let selectedExportType = 'submit';
+
+let announceData = [
+  {tipe:'Event', judul:'Best SS bulan Juli diumumkan 3 Agustus', isi:'Nominasi ditutup 25 Juli. Pantau hasilnya di Leaderboard.', audience:[], period:'3–17 Agu 2026'},
+  {tipe:'Reminder', judul:'3 SS Anda menunggu laporan implementasi', isi:'Sudah disetujui lebih dari 1 bulan — segera lengkapi laporan.', audience:['Submitter'], period:'1–31 Agu 2026'},
+  {tipe:'Informasi', judul:'Materi: Dasar-dasar IAS', isi:'Selesaikan quiz untuk +50 XP di Top Challenger.', audience:[], period:'Selalu tampil'},
+];
+
+const USERS = {
+  submitter:{init:'DP', name:'Dewi Puspita', first:'Dewi', role:'NIP 88213 · Submitter', scope:'Submitter · PT Paragon Technology'},
+  superior:{init:'AF', name:'Ahmad Fauzi', first:'Ahmad', role:'NIP 55021 · Superior', scope:'Superior · Tim QA Plant J2'},
+  admin:{init:'RA', name:'Rina Anggraini', first:'Rina', role:'NIP 11002 · Admin Area', scope:'Admin Area · Area Kerja Jakarta'},
+};
+const LABELS = {
+  home:{submitter:'Beranda', superior:'Dashboard', admin:'Dashboard'},
+  list:{submitter:'Ide Saya', superior:'Antrian Review', admin:'Monitoring SS'},
+  listShort:{submitter:'Ide Saya', superior:'Antrian', admin:'Monitor'},
+};
+
+let currentRole = 'submitter';
+let currentView = 'dashboard';
+let selectedIdx = 0;
+let chartsBooted = false, adminChartsBooted = false;
+let sparkCharts = [];
+
+/* ============ UTIL: chips, loading, toast, validation ============ */
+function buildChips(containerId, items){
+  const box = document.getElementById(containerId);
+  box.innerHTML = items.map(t=>`<button type="button" class="chip" aria-pressed="false" data-value="${esc(t.value ?? t)}">${esc(t.label ?? t)}</button>`).join('');
+  box.addEventListener('click', e=>{
+    const chip = e.target.closest('.chip'); if(!chip) return;
+    chip.setAttribute('aria-pressed', chip.getAttribute('aria-pressed')==='true' ? 'false' : 'true');
+    box.closest('.field')?.classList.remove('has-error');
+    const cb = box.dataset.onchange; if(cb) window[cb]();
+  });
+}
+const chipValues = id => Array.from(document.querySelectorAll(`#${id} .chip[aria-pressed="true"]`)).map(c=>c.dataset.value);
+const clearChips = id => document.querySelectorAll(`#${id} .chip`).forEach(c=>c.setAttribute('aria-pressed','false'));
+
+function withLoading(btn, ms, done){
+  if(!btn){ done(); return; }
+  if(btn.disabled) return;
+  const html = btn.innerHTML;
+  btn.disabled = true; btn.setAttribute('aria-busy','true');
+  btn.innerHTML = '<span class="spinner" aria-hidden="true"></span> Memproses…';
+  setTimeout(()=>{ btn.disabled=false; btn.removeAttribute('aria-busy'); btn.innerHTML = html; done(); }, ms);
+}
+
+let toastTimer;
+function toast(msg, ic='check-circle'){
+  const t = document.getElementById('toast');
+  t.innerHTML = icon(ic) + esc(msg);
+  t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(()=> t.hidden = true, 3500);
+}
+
+function showFileName(input){
+  const out = input.parentElement.querySelector('.file-name');
+  out.textContent = input.files.length ? Array.from(input.files).map(f=>f.name).join(', ') : '';
+  input.closest('.field')?.classList.remove('has-error');
+}
+
+/* marks required fields; returns the first invalid element (or null) */
+function validateForm(form){
+  let first = null;
+  const fail = (field, focusEl)=>{ field.classList.add('has-error'); if(focusEl) focusEl.setAttribute('aria-invalid','true'); if(!first) first = focusEl || field; };
+  form.querySelectorAll('.field').forEach(f=>{ f.classList.remove('has-error'); f.querySelectorAll('[aria-invalid]').forEach(el=>el.removeAttribute('aria-invalid')); });
+  form.querySelectorAll('.field[data-required]').forEach(f=>{
+    const el = f.querySelector('input,textarea,select');
+    if(!el.value.trim()) fail(f, el);
+  });
+  form.querySelectorAll('.field[data-required-file]').forEach(f=>{
+    const el = f.querySelector('input[type=file]');
+    if(!el.files.length) fail(f, el);
+  });
+  return first;
+}
+function wireErrorClearing(form){
+  form.addEventListener('input', e=>{
+    const f = e.target.closest('.field');
+    if(f && e.target.value && e.target.value.trim()){ f.classList.remove('has-error'); e.target.removeAttribute('aria-invalid'); }
+  });
+}
+/* link each error message to its input for screen readers */
+function linkErrors(){
+  document.querySelectorAll('.field').forEach((f,i)=>{
+    const err = f.querySelector('.field-error'); const el = f.querySelector('input,textarea,select');
+    if(err && el){ err.id = err.id || `err-${i}`; el.setAttribute('aria-describedby', err.id); }
+  });
+}
+
+/* ============ AUTH ============ */
+function doLogin(role){
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('appShell').classList.remove('hidden');
+  setRole(role);
+  go('dashboard');
+  document.getElementById('main').focus({preventScroll:true});
+}
+function doLogout(){
+  document.getElementById('appShell').classList.add('hidden');
+  document.getElementById('loginScreen').classList.remove('hidden');
+  closeMoreSheet();
+}
+
+/* ============ MOBILE SHEET ============ */
+function openMoreSheet(){
+  document.getElementById('moreBackdrop').classList.add('open');
+  const s = document.getElementById('moreSheet'); s.classList.add('open');
+  s.querySelector('.more-item').focus();
+}
+function closeMoreSheet(){
+  document.getElementById('moreBackdrop').classList.remove('open');
+  document.getElementById('moreSheet').classList.remove('open');
+}
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeMoreSheet(); });
+
+/* ============ NAV ============ */
+const TITLES = () => ({
+  dashboard:[LABELS.home[currentRole], currentRole==='submitter' ? 'Ringkasan aktivitas Sumbang Saran Anda' : 'Ringkasan analitik & performa tim'],
+  create:['Ajukan Ide Baru','Ajukan ide perbaikan baru'],
+  report:['Laporan Implementasi','Laporkan hasil implementasi ide Anda'],
+  list:[LABELS.list[currentRole], currentRole==='submitter' ? 'Pantau status & riwayat ide' : currentRole==='superior' ? 'Ide/laporan yang menunggu keputusan Anda' : 'Pantau seluruh SS dalam scope Anda (hanya lihat)'],
+  leaderboard:['Leaderboard','Papan peringkat & rekognisi'],
+  learning:['Pengumuman & Belajar','Info terbaru dan materi pembelajaran'],
+  admin:['Panel Admin','Kelola data dalam scope Anda'],
+  export:['Export Data','Unduh data sesuai filter & scope Anda'],
+});
+
+function go(view){
+  if(view==='create' && currentRole!=='submitter') view = 'dashboard';
+  if((view==='admin' || view==='export') && currentRole!=='admin') view = 'dashboard';
+  currentView = view;
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active', v.id==='view-'+view));
+  document.querySelectorAll('.nav-item, .bn-item').forEach(n=>{
+    if(n.dataset.view===view) n.setAttribute('aria-current','page'); else n.removeAttribute('aria-current');
+  });
+  if(view==='list') document.getElementById('listSplit').classList.remove('detail-open');
+  const [t, s] = TITLES()[view];
+  document.getElementById('topbarTitle').innerHTML = `${esc(t)}<span>${esc(s)}</span>`;
+  if(view==='export') recalcExport();
+  if(view==='dashboard' && currentRole!=='submitter') bootCharts();
+  window.scrollTo(0,0);
+}
+
+function setRole(role){
+  currentRole = role;
+  document.querySelectorAll('[data-role]').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.role===role)));
+  document.querySelectorAll('.admin-only').forEach(n=> n.hidden = role!=='admin');
+  document.querySelectorAll('.submitter-only').forEach(n=> n.hidden = role!=='submitter');
+  document.querySelectorAll('[data-label]').forEach(n=> n.textContent = LABELS[n.dataset.label][role]);
+  document.getElementById('listTitle').textContent = LABELS.list[role];
+  document.getElementById('listSub').textContent = TITLES().list[1] + '. Pilih salah satu untuk melihat detail dan chat review.';
+  if(role!=='admin'){ document.getElementById('announceForm').hidden = true; setAnnounceToggle(false); }
+
+  const u = USERS[role];
+  document.getElementById('avatarInit').textContent = u.init;
+  document.getElementById('whoName').textContent = u.name;
+  document.getElementById('whoRole').textContent = u.role;
+  document.getElementById('scopeNote').textContent = 'Login sebagai ' + u.scope;
+
+  document.getElementById('dash-simple').hidden = role!=='submitter';
+  document.getElementById('dash-analytic').hidden = role==='submitter';
+  document.getElementById('scopeBanner').innerHTML = role==='superior'
+    ? 'Menampilkan data <b>tim binaan Anda</b> (14 submitter). Superior tidak membuat SS baru — hanya mereview.'
+    : 'Menampilkan data <b>Area Kerja Jakarta</b> saja. Admin memantau; review dan approval sepenuhnya wewenang Superior.';
+
+  if(role!=='submitter') renderKPI();
+  renderSimpleHome();
+  renderList();
+  renderAnnouncements();
+  go(currentView);
+}
+
+/* ============ SUBMITTER HOME ============ */
+function renderSimpleHome(){
+  const h = new Date().getHours();
+  const greet = h < 11 ? 'Selamat pagi' : h < 15 ? 'Selamat siang' : h < 18 ? 'Selamat sore' : 'Selamat malam';
+  document.getElementById('greetText').textContent = `${greet}, ${USERS.submitter.first}`;
+  document.getElementById('tileListSub').textContent = `${ssRecords.length} pengajuan`;
+
+  const item = (r)=>`
+    <button class="mini-item" onclick="openSS('${r.id}')">
+      <span class="grow"><span class="ss-title" style="display:block;">${esc(r.title)}</span><span class="ss-meta">${r.id} · ${r.date}</span></span>
+      ${pill(r.status)}
+    </button>`;
+  const todo = ssRecords.filter(r=>needsSubmitterAction(r.status));
+  document.getElementById('todoList').innerHTML = todo.length ? todo.map(item).join('') : `<div class="empty-note">Tidak ada yang perlu ditindaklanjuti. Mantap!</div>`;
+  document.getElementById('miniSSList').innerHTML = ssRecords.slice(0,3).map(item).join('');
+}
+function openSS(id){
+  const i = ssRecords.findIndex(r=>r.id===id);
+  go('list'); selectSS(i, true);
+}
+
+/* ============ PIPELINE (replaces linear funnel) ============ */
+function renderPipeline(){
+  const bar = (parts, total)=> parts.map(p=>`<span style="width:${(p.value/total*100).toFixed(2)}%; background:${p.color}" title="${p.label}: ${fmt(p.value)}"></span>`).join('');
+  const legend = (parts, total)=> parts.map(p=>`<li><span class="sw" style="background:${p.color}"></span>${p.label} <b>${fmt(p.value)}</b> (${pct(p.value/total*100)})</li>`).join('');
+  document.getElementById('pipeline').innerHTML = `
+    <div class="pipe">
+      <div class="pipe-head"><b>Keputusan atas ide</b><span>${fmt(pipeline.total)} ide diajukan</span></div>
+      <div class="pipe-bar" aria-hidden="true">${bar(pipeline.decision, pipeline.total)}</div>
+      <ul class="pipe-legend">${legend(pipeline.decision, pipeline.total)}</ul>
+    </div>
+    <div class="pipe">
+      <div class="pipe-head"><b>Progres implementasi</b><span>dari ${fmt(pipeline.approvedTotal)} ide disetujui</span></div>
+      <div class="pipe-bar" aria-hidden="true">${bar(pipeline.implementation, pipeline.approvedTotal)}</div>
+      <ul class="pipe-legend">${legend(pipeline.implementation, pipeline.approvedTotal)}</ul>
+    </div>`;
+}
+
+/* ============ KPI ============ */
+function renderKPI(){
+  sparkCharts.forEach(c=>c.destroy()); sparkCharts = [];
+  const set = kpiSets[currentRole];
+  document.getElementById('kpiRow').innerHTML = set.map((k,i)=>`
+    <div class="kpi">
+      <div class="label">${k.label}</div>
+      <div class="value-row"><div class="value">${k.value}</div><canvas id="spark-${i}" aria-hidden="true"></canvas></div>
+      <div class="delta ${k.up?'up':''}">${k.up?icon('trending'):''}${k.delta}</div>
+    </div>`).join('');
+  if(typeof Chart==='undefined') return;
+  set.forEach((k,i)=>{
+    sparkCharts.push(new Chart(document.getElementById('spark-'+i), {
+      type:'line',
+      data:{labels:k.spark.map((_,x)=>x), datasets:[{data:k.spark, borderColor:cssVar('--series-single'), borderWidth:2, pointRadius:0, tension:.35}]},
+      options:{responsive:false, animation:false, events:[], plugins:{legend:{display:false}, tooltip:{enabled:false}}, scales:{x:{display:false}, y:{display:false}}}
+    }));
+  });
+}
+function cssVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+/* ============ LIST + DETAIL ============ */
+function renderList(){
+  const body = document.getElementById('ssTableBody');
+  body.innerHTML = ssRecords.map((r,i)=>{
+    const needs = currentRole==='submitter' ? needsSubmitterAction(r.status) : currentRole==='superior' ? needsSuperiorAction(r.status) : false;
+    return `
+    <tr class="ss-row ${i===selectedIdx?'selected':''}" onclick="selectSS(${i}, true)">
+      <td><button class="row-link" onclick="event.stopPropagation(); selectSS(${i}, true)" aria-label="${esc(r.title)}, ${statusMeta[r.status].label}${needs?', perlu aksi':''}">
+        <span class="ss-id">${r.id}<span class="ss-cat-inline"> · ${esc(r.cat)}</span></span><span class="ss-title" style="display:block;">${esc(r.title)}${needs?`<span class="needs-badge">Perlu aksi</span>`:''}</span></button></td>
+      <td data-th="Jenis" class="col-jenis"><span class="cat-tag">${esc(r.cat)}</span></td>
+      <td data-th="Status">${pill(r.status)}</td>
+      <td data-th="Diajukan" class="ss-meta" style="white-space:nowrap;">${r.date}</td>
+    </tr>`;
+  }).join('');
+  selectSS(selectedIdx, false);
+  updateListBadge();
+}
+
+function updateListBadge(){
+  const badge = document.getElementById('listNavBadge');
+  const bn = document.getElementById('bnListCount');
+  if(currentRole==='admin'){ badge.hidden = true; bn.hidden = true; return; }
+  const check = currentRole==='submitter' ? needsSubmitterAction : needsSuperiorAction;
+  const n = ssRecords.filter(r=>check(r.status)).length;
+  badge.hidden = n===0; badge.textContent = n; badge.setAttribute('aria-label', `${n} perlu aksi`);
+  bn.hidden = n===0; bn.textContent = n;
+}
+
+function banner(tone, ic, title, desc, cta=''){
+  return `<div class="banner ${tone}"><div class="b-ic">${icon(ic)}</div><div><div class="t">${title}</div><div class="d">${desc}</div>${cta}</div></div>`;
+}
+
+function reviewPanel(i, isReport){
+  return `
+  <div class="action-panel">
+    <div class="field" id="reviewField">
+      <label for="reviewNote">${isReport ? 'Review laporan implementasi' : 'Review ide ini'} — catatan untuk submitter <span class="hint">(wajib untuk ${isReport?'Minta Revisi':'Minta Revisi / Tolak'})</span></label>
+      <textarea id="reviewNote" aria-describedby="reviewNote-err" placeholder="Tulis catatan/feedback yang jelas dan bisa ditindaklanjuti…"></textarea>
+      <div class="field-error" id="reviewNote-err">${icon('alert')}Tulis alasan agar submitter tahu apa yang harus diperbaiki.</div>
+    </div>
+    <div class="action-btns">
+      <button class="btn btn-success" onclick="reviewAction(${i},'${isReport?'approve_report':'approve_idea'}', this)">${icon('check')} ${isReport?'Approve laporan':'Approve'}</button>
+      <button class="btn btn-warn" onclick="reviewAction(${i},'${isReport?'revise_report':'revise_idea'}', this)">${icon('pencil')} Minta revisi</button>
+      ${isReport ? '' : `<button class="btn btn-danger" onclick="reviewAction(${i},'reject_idea', this)">${icon('x')} Tolak</button>`}
+    </div>
+  </div>`;
+}
+
+function flowBannerFor(r, i){
+  const s = r.status;
+  if(currentRole==='submitter'){
+    return {
+      submitted: banner('info','clock','Menunggu direview Superior','Ide Anda sedang antre untuk direview oleh Ahmad Fauzi. Anda akan mendapat notifikasi begitu ada keputusan.'),
+      revise_idea: banner('warn','pencil','Superior meminta revisi','Baca catatan Superior di riwayat chat, lalu perbaiki dan ajukan ulang ide Anda.', `<button class="btn btn-sm btn-primary cta" onclick="resubmitIdea(${i}, this)">${icon('rotate')} Revisi &amp; submit ulang</button>`),
+      rejected: banner('danger','x-circle','Ide ini tidak dilanjutkan','Baca alasan Superior di riwayat chat. Banyak peluang perbaikan lain yang menunggu ide Anda berikutnya.', `<button class="btn btn-sm cta" onclick="go('create')">${icon('lightbulb')} Ajukan ide lain</button>`),
+      approved: banner('success','check-circle','Ide disetujui — saatnya implementasi','Setelah ide diterapkan di lapangan, submit laporan implementasinya di sini.', `<button class="btn btn-sm btn-primary cta" onclick="openReportForm(${i})">${icon('upload')} Submit laporan implementasi</button>`),
+      review_report: banner('info','search','Laporan sedang direview','Superior sedang meninjau laporan implementasi Anda.'),
+      revise_report: banner('warn','pencil','Laporan perlu direvisi','Baca catatan Superior di riwayat chat, lalu perbaiki laporan dan ajukan ulang.', `<button class="btn btn-sm btn-primary cta" onclick="openReportForm(${i})">${icon('rotate')} Revisi laporan</button>`),
+      implemented: banner('done','award','Selamat, ide ini sudah Implemented','Ide Anda resmi selesai dan berkontribusi untuk perusahaan. Reward &amp; poin leaderboard sudah diproses.'),
+    }[s];
+  }
+  if(currentRole==='superior'){
+    if(s==='submitted') return reviewPanel(i, false);
+    if(s==='review_report') return reviewPanel(i, true);
+    return {
+      revise_idea: banner('neutral','clock','Menunggu submitter','Submitter sedang merevisi dan akan mengajukan ulang idenya.'),
+      revise_report: banner('neutral','clock','Menunggu submitter','Submitter sedang merevisi laporan implementasi.'),
+      approved: banner('info','wrench','Sedang diimplementasikan','Laporan akan masuk ke antrian review Anda setelah submitter selesai.'),
+      rejected: banner('neutral','x-circle','Ide ini telah ditolak','Tidak ada aksi lebih lanjut.'),
+      implemented: banner('done','award','Selesai — Implemented','Laporan sudah Anda approve. Reward &amp; poin leaderboard sudah diproses.'),
+    }[s];
+  }
+  const observer = `<div class="note" style="margin-bottom:var(--sp-3);">${icon('eye')}<span>Anda melihat sebagai <b>Admin (observer)</b>. Review/approval dilakukan oleh Superior; Anda dapat memantau &amp; ikut chat bila perlu.</span></div>`;
+  return observer + {
+    submitted: banner('info','clock','Menunggu review Superior','Ide ini ada di antrian review Ahmad Fauzi.'),
+    revise_idea: banner('warn','pencil','Submitter sedang merevisi ide','Menunggu submitter mengajukan ulang.'),
+    approved: banner('info','wrench','Disetujui — sedang diimplementasikan','Submitter sedang mengerjakan implementasi di lapangan.'),
+    rejected: banner('danger','x-circle','Ide ini ditolak Superior','Tidak ada aksi lebih lanjut.'),
+    review_report: banner('info','search','Laporan menunggu review Superior','Laporan implementasi sedang ditinjau oleh Ahmad Fauzi.'),
+    revise_report: banner('warn','pencil','Laporan sedang direvisi submitter','Menunggu laporan dikirim ulang.'),
+    implemented: banner('done','award','Selesai — Implemented','Reward &amp; poin leaderboard submitter sudah diproses.'),
+  }[s];
+}
+
+function renderChat(r){
+  return r.chat.map(m=> m.side==='sys'
+    ? `<div class="system-msg">${esc(m.text)} · ${m.time}</div>`
+    : `<div class="msg ${m.side}"><div class="who">${esc(m.who)}</div>${esc(m.text)}<div class="time">${m.time}</div></div>`
+  ).join('');
+}
+
+function selectSS(i, userPicked){
+  if(i<0 || !ssRecords[i]) i = 0;
+  selectedIdx = i;
+  document.querySelectorAll('.ss-row').forEach((row,j)=>row.classList.toggle('selected', j===i));
+  const r = ssRecords[i];
+  const stage = stageOf(r.status);
+  const stageText = r.status==='rejected' ? 'Berhenti di tahap pengajuan (ditolak)' : `Tahap ${stage+1} dari 4: ${STAGES[stage]}`;
+  document.getElementById('detailPanel').innerHTML = `
+    <button class="mobile-back-btn" onclick="backToList()">${icon('chevron-left')} Kembali ke daftar</button>
+    <div class="detail-header">
+      <div>
+        <span class="ss-id">${r.id}</span>
+        <h2 class="section-title" style="margin-top:2px;">${esc(r.title)}</h2>
+        <div class="ss-meta">Diajukan ${r.date} · Jenis ${esc(r.cat)}</div>
+      </div>
+      ${pill(r.status)}
+    </div>
+    <div class="progress" aria-hidden="true">${STAGES.map((_,j)=>`<span class="${j<=stage && r.status!=='rejected' ? 'on':''}"></span>`).join('')}</div>
+    <div class="progress-label">${stageText}</div>
+    ${flowBannerFor(r, i) || ''}
+    <h3 class="section-title" style="font-size:var(--fs-14); margin-bottom:var(--sp-2);">Riwayat chat review</h3>
+    <div class="chat-thread" id="chatThread">${renderChat(r)}</div>
+    <form class="chat-input" onsubmit="event.preventDefault(); sendChat(${i});">
+      <label for="chatInputBox" class="sr-only">Tulis pesan</label>
+      <input type="text" class="input" id="chatInputBox" placeholder="Tulis pesan…" autocomplete="off">
+      <button type="submit" class="btn btn-primary" aria-label="Kirim pesan">${icon('send')}</button>
+    </form>`;
+  const thread = document.getElementById('chatThread');
+  if(thread) thread.scrollTop = thread.scrollHeight;
+  document.getElementById('reviewNote')?.addEventListener('input', ()=>document.getElementById('reviewField').classList.remove('has-error'));
+  if(userPicked && window.innerWidth < 1200){
+    document.getElementById('listSplit').classList.add('detail-open');
+    window.scrollTo(0,0);
+  }
+}
+function backToList(){ document.getElementById('listSplit').classList.remove('detail-open'); window.scrollTo(0,0); }
+
+function sendChat(i){
+  const box = document.getElementById('chatInputBox');
+  if(!box.value.trim()) return;
+  const me = currentRole==='submitter';
+  ssRecords[i].chat.push({who: me ? 'Dewi Puspita' : currentRole==='superior' ? 'Ahmad Fauzi (Superior)' : 'Rina Anggraini (Admin)', side: me ? 'them' : 'me', text:box.value.trim(), time:nowTime()});
+  selectSS(i, false);
+  document.getElementById('chatInputBox').focus();
+}
+
+function reviewAction(i, action, btn){
+  const r = ssRecords[i];
+  const noteEl = document.getElementById('reviewNote');
+  const note = noteEl.value.trim();
+  const needsNote = action==='revise_idea' || action==='reject_idea' || action==='revise_report';
+  if(needsNote && !note){
+    document.getElementById('reviewField').classList.add('has-error');
+    noteEl.setAttribute('aria-invalid','true'); noteEl.focus();
+    return;
+  }
+  withLoading(btn, 500, ()=>{
+    const sup = 'Ahmad Fauzi (Superior)';
+    const add = (who, side, text)=> r.chat.push({who, side, text, time:nowTime()});
+    if(action==='approve_idea'){ r.status='approved'; add(null,'sys','Ahmad Fauzi menyetujui ide ini'); add(sup,'me', note || 'Disetujui, silakan lanjut implementasi.'); toast('Ide disetujui.'); }
+    if(action==='revise_idea'){ r.status='revise_idea'; add(sup,'me',note); add(null,'sys','Ahmad Fauzi meminta revisi ide'); toast('Permintaan revisi terkirim.'); }
+    if(action==='reject_idea'){ r.status='rejected'; add(sup,'me',note); add(null,'sys','Ahmad Fauzi menolak ide ini'); toast('Ide ditolak.'); }
+    if(action==='approve_report'){ r.status='implemented'; add(null,'sys','Ahmad Fauzi menyetujui laporan — status Implemented'); if(note) add(sup,'me',note); toast('Laporan disetujui — Implemented.'); }
+    if(action==='revise_report'){ r.status='revise_report'; add(sup,'me',note); add(null,'sys','Ahmad Fauzi meminta revisi laporan'); toast('Permintaan revisi laporan terkirim.'); }
+    renderList(); renderSimpleHome();
+  });
+}
+
+function resubmitIdea(i, btn){
+  withLoading(btn, 500, ()=>{
+    const r = ssRecords[i];
+    r.status = 'submitted';
+    r.chat.push({side:'sys', text:'Dewi Puspita mengajukan ulang ide ini (revisi)', time:nowTime()});
+    renderList(); renderSimpleHome(); toast('Ide diajukan ulang ke Superior.');
+  });
+}
+
+/* ============ CREATE / REPORT ============ */
+function submitIdea(btn){
+  const form = document.getElementById('createForm');
+  let first = validateForm(form);
+  if(!chipValues('cJenis').length){
+    document.getElementById('cJenisField').classList.add('has-error');
+    first = first || document.querySelector('#cJenis .chip');
+  }
+  if(first){ first.focus(); toast('Lengkapi field yang ditandai merah.', 'alert'); return; }
+  withLoading(btn, 700, ()=>{
+    const id = 'SS-2026-00' + nextSeq++;
+    ssRecords.unshift({id, title:document.getElementById('cTitle').value.trim(), cat:chipValues('cJenis')[0], status:'submitted', date:'29 Sep 2026',
+      chat:[{side:'sys', text:'Dewi Puspita mengajukan ide ini', time:nowTime()}]});
+    form.reset(); clearChips('cJenis'); form.querySelectorAll('.file-name').forEach(f=>f.textContent='');
+    document.getElementById('cId').value = 'SS-2026-00' + nextSeq;
+    selectedIdx = 0;
+    renderList(); renderSimpleHome();
+    go('list'); selectSS(0, true);
+    toast(`${id} terkirim ke Superior untuk direview.`);
+  });
+}
+
+function openReportForm(i){
+  window.__activeReportIdx = i;
+  const r = ssRecords[i];
+  document.getElementById('rptId').value = r.id;
+  document.getElementById('rptTitle').value = r.title;
+  document.getElementById('reportSSId').textContent = r.id;
+  go('report');
+}
+function submitReport(btn){
+  const form = document.getElementById('reportForm');
+  const first = validateForm(form);
+  if(first){ first.focus(); toast('Lengkapi field yang ditandai merah.', 'alert'); return; }
+  const i = window.__activeReportIdx;
+  withLoading(btn, 700, ()=>{
+    const r = ssRecords[i];
+    r.status = 'review_report';
+    r.chat.push({who:'Dewi Puspita', side:'them', text:'Laporan implementasi sudah saya submit, mohon direview.', time:nowTime()});
+    r.chat.push({side:'sys', text:'Dewi Puspita mengirim laporan implementasi', time:nowTime()});
+    selectedIdx = i;
+    renderList(); renderSimpleHome();
+    go('list'); selectSS(i, true);
+    toast('Laporan terkirim ke Superior.');
+  });
+}
+
+/* ============ LEADERBOARD ============ */
+let lbActive = 'submitter';
+function renderLBTabs(){
+  document.getElementById('lbTabs').innerHTML = lbCategories.map(c=>
+    `<button class="chip" aria-pressed="${c.key===lbActive}" onclick="setLB('${c.key}')">${c.label}</button>`).join('');
+  renderLBBody();
+}
+function setLB(key){ lbActive = key; renderLBTabs(); }
+const initials = n => n.replace(/[()]/g,'').split(' ').map(w=>w[0]).slice(0,2).join('');
+
+function renderLBBody(){
+  const list = lbData.list, [a,b,c] = list, max = list[0].score;
+  const col = (p, cls, rank)=>`
+    <div class="podium-col ${cls}">
+      <div class="podium-avatar" aria-hidden="true">${initials(p.name)}<span class="podium-medal">${rank}</span></div>
+      <div class="podium-name"><span class="sr-only">Peringkat ${rank}: </span>${esc(p.name)}</div>
+      <div class="podium-sub">${esc(p.sub)}</div>
+      <div class="podium-bar">${fmt(p.score)}</div>
+    </div>`;
+  document.getElementById('podium').innerHTML = `<div class="podium">${col(b,'second',2)}${col(a,'first',1)}${col(c,'third',3)}</div>`;
+  const row = (rank, p, me)=>`
+    <div class="lb-row ${me?'me':''}">
+      <div class="lb-rank">${rank}</div>
+      <div class="lb-avatar" aria-hidden="true">${initials(p.name)}</div>
+      <div><div class="lb-name">${esc(p.name)}</div><div class="lb-sub">${esc(p.sub)}</div></div>
+      <div class="lb-bar-wrap" aria-hidden="true"><div class="lb-bar" style="transform:scaleX(${(p.score/max).toFixed(3)})"></div></div>
+      <div class="lb-score">${fmt(p.score)}</div>
+    </div>`;
+  document.getElementById('lbBody').innerHTML = list.slice(3).map((p,i)=>row(i+4,p)).join('') + row(lbData.me.rank, lbData.me, true);
+}
+
+/* ============ CHARTS ============ */
+function tableFor(detailsId, headers, rows){
+  const d = document.getElementById(detailsId);
+  d.querySelector('table')?.remove();
+  d.insertAdjacentHTML('beforeend', `<table><thead><tr>${headers.map((h,i)=>`<th scope="col" ${i?'style="text-align:right"':''}>${h}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map(r=>`<tr>${r.map((v,i)=> i ? `<td class="num">${v}</td>` : `<th scope="row" style="text-transform:none; letter-spacing:0; font-size:var(--fs-14); color:var(--text); border-bottom:1px solid var(--border);">${v}</th>`).join('')}</tr>`).join('')}</tbody></table>`);
+}
+
+function chartDefaults(){
+  Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
+  Chart.defaults.font.size = 12;
+  Chart.defaults.color = cssVar('--text-muted');
+  Chart.defaults.maintainAspectRatio = false;
+  Chart.defaults.plugins.tooltip.backgroundColor = cssVar('--text');
+  Chart.defaults.plugins.tooltip.padding = 10;
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) Chart.defaults.animation = false;
+}
+function hbar(canvasId, labels, data, unit){
+  return new Chart(document.getElementById(canvasId), {
+    type:'bar',
+    data:{labels, datasets:[{data, backgroundColor:cssVar('--series-single'), borderRadius:4, barThickness:14}]},
+    options:{
+      indexAxis:'y',
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>`${fmt(c.raw)}${unit}`}}},
+      scales:{x:{grid:{color:'#EEF0F3'}, border:{display:false}, ticks:{callback:v=>fmt(v)}}, y:{grid:{display:false}, border:{display:false}}}
+    }
+  });
+}
+const sortDesc = (labels, data) => labels.map((l,i)=>[l,data[i]]).sort((a,b)=>b[1]-a[1]);
+
+function bootCharts(){
+  if(typeof Chart==='undefined'){ return; }
+  if(!chartsBooted){
+    chartsBooted = true;
+    chartDefaults();
+    renderPipeline();
+    const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul'];
+    const series = [
+      {label:'Diajukan', data:[420,480,510,470,560,600,584], color:cssVar('--series-submitted')},
+      {label:'Disetujui', data:[110,130,120,140,150,165,158], color:cssVar('--series-approved')},
+      {label:'Implemented', data:[30,42,38,50,55,60,63], color:cssVar('--series-implemented')},
+    ];
+    new Chart(document.getElementById('trendChart'), {
+      type:'line',
+      data:{labels:months, datasets:series.map(s=>({label:s.label, data:s.data, borderColor:s.color, backgroundColor:s.color, borderWidth:2, pointRadius:0, pointHoverRadius:5, tension:.3}))},
+      options:{
+        interaction:{mode:'index', intersect:false},
+        plugins:{legend:{position:'bottom', labels:{boxWidth:10, boxHeight:10, usePointStyle:true, pointStyle:'rectRounded'}}, tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${fmt(c.raw)}`}}},
+        scales:{x:{grid:{display:false}, border:{display:false}}, y:{grid:{color:'#EEF0F3'}, border:{display:false}, ticks:{callback:v=>fmt(v)}}}
+      }
+    });
+    tableFor('trendTable', ['Bulan', ...series.map(s=>s.label)], months.map((m,i)=>[m, ...series.map(s=>fmt(s.data[i]))]));
+
+    const cat = sortDesc(['Safety','Penerapan 5R','Delivery','Productivity','Morale','Cost Reduction'], [177,132,62,42,28,9]);
+    hbar('categoryChart', cat.map(c=>c[0]), cat.map(c=>c[1]), ' ide');
+    tableFor('categoryTable', ['Jenis SS','Jumlah ide'], cat.map(c=>[c[0], fmt(c[1])]));
+  }
+  if(currentRole==='admin' && !adminChartsBooted){
+    adminChartsBooted = true;
+    const lt = sortDesc(['Produksi','Gudang','Packaging','HSE','Quality'], [19,20,21,22,17]);
+    hbar('leadTimeChart', lt.map(c=>c[0]), lt.map(c=>c[1]), ' hari');
+    tableFor('leadTimeTable', ['Departemen','Lead time (hari)'], lt.map(c=>[c[0], fmt(c[1])]));
+    const inv = sortDesc(['Jakarta','Bekasi','Bandung','Batam','Palembang'], [42,38,35,29,24]);
+    hbar('involvementChart', inv.map(c=>c[0]), inv.map(c=>c[1]), '% dari headcount');
+    tableFor('involvementTable', ['Area','Involvement'], inv.map(c=>[c[0], pct(c[1])]));
+  }
+}
+
+/* ============ EXPORT ============ */
+function resetExportFilters(){
+  clearChips('fltStatusChips'); clearChips('fltJenisChips');
+  ['fltDirektorat','fltDepartemen','fltDivisi','fltArea','fltSuperior'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fltStart').value = '01/01/2026';
+  document.getElementById('fltEnd').value = '31/07/2026';
+  recalcExport();
+}
+function selectExportType(type){
+  selectedExportType = type;
+  document.querySelectorAll('.type-card').forEach(c=>c.setAttribute('aria-checked', String(c.dataset.type===type)));
+  recalcExport();
+}
+function recalcExport(){
+  const v = id => document.getElementById(id).value;
+  const f = {direktorat:v('fltDirektorat'), departemen:v('fltDepartemen'), divisi:v('fltDivisi'), area:v('fltArea'), superior:v('fltSuperior')};
+  const statuses = chipValues('fltStatusChips'), jenis = chipValues('fltJenisChips');
+  const rows = exportPreviewData.filter(r=>
+    Object.entries(f).every(([k,val])=>!val || r[k]===val) &&
+    (!statuses.length || statuses.includes(r.status)) &&
+    (!jenis.length || jenis.includes(r.jenis)) &&
+    (selectedExportType!=='report' || r.status==='implemented'));
+
+  /* deterministic estimate (no random flicker between keystrokes) */
+  const active = Object.values(f).filter(Boolean).length + (statuses.length?1:0) + (jenis.length?1:0);
+  let est = Math.round(52514 * Math.pow(0.33, active));
+  if(selectedExportType==='report') est = Math.round(est * 0.03);
+  est = Math.max(est, rows.length);
+
+  const typeLabel = {submit:'Data Submit SS', report:'Laporan Implementasi', leaderboard:'Analisis Leaderboard'}[selectedExportType];
+  document.getElementById('exportCountText').innerHTML = `Sekitar <b style="color:var(--text);">${fmt(est)}</b> baris cocok untuk export <b style="color:var(--text);">${typeLabel}</b> dengan filter saat ini.`;
+  document.getElementById('exportPreviewBody').innerHTML = rows.length
+    ? rows.slice(0,6).map(r=>`<tr><td class="ss-id">${r.id}</td><td>${pill(r.status)}</td><td>${r.direktorat}</td><td>${r.departemen}</td><td class="ss-meta">${r.date}</td></tr>`).join('')
+    : `<tr><td colspan="5" class="empty-note">${icon('inbox')} Tidak ada data yang cocok dengan kombinasi filter ini.</td></tr>`;
+  document.getElementById('exportAsyncNote').hidden = est <= 1000;
+}
+function doExport(btn){
+  const async = !document.getElementById('exportAsyncNote').hidden;
+  withLoading(btn, 900, ()=> toast(async
+    ? 'Export diproses di background. Email dikirim saat file siap (estimasi 2–5 menit).'
+    : 'File siap diunduh (simulasi).'));
+}
+
+/* ============ ANNOUNCEMENTS ============ */
+function renderAnnouncements(){
+  document.getElementById('announceGrid').innerHTML = announceData.map((a,i)=>`
+    <article class="card card-pad announce-card">
+      ${currentRole==='admin' ? `<button class="announce-del" onclick="deleteAnnouncement(${i})" aria-label="Hapus pengumuman: ${esc(a.judul)}">${icon('trash')}</button>` : ''}
+      <span class="cat-tag">${esc(a.tipe)}</span>
+      <h2 class="section-title">${esc(a.judul)}</h2>
+      <p class="section-sub" style="margin-bottom:0;">${esc(a.isi)}</p>
+      <div class="announce-meta"><span>${icon('target')}${a.audience.length ? esc(a.audience.join(', ')) : 'Semua audiens'}</span><span>${icon('calendar')}${esc(a.period)}</span></div>
+    </article>`).join('') || `<div class="empty-note" style="grid-column:1/-1;">Belum ada pengumuman aktif.</div>`;
+}
+function setAnnounceToggle(open){
+  document.getElementById('announceToggle').setAttribute('aria-expanded', String(open));
+  document.getElementById('announceToggleLabel').textContent = open ? 'Tutup form' : 'Buat Pengumuman';
+}
+function toggleAnnounceForm(){
+  const form = document.getElementById('announceForm');
+  form.hidden = !form.hidden;
+  setAnnounceToggle(!form.hidden);
+  if(!form.hidden) document.getElementById('anJudul').focus();
+}
+function publishAnnouncement(btn){
+  const form = document.getElementById('announceForm');
+  const first = validateForm(form);
+  if(first){ first.focus(); return; }
+  withLoading(btn, 500, ()=>{
+    announceData.unshift({
+      tipe:document.getElementById('anTipe').value,
+      judul:document.getElementById('anJudul').value.trim(),
+      isi:document.getElementById('anIsi').value.trim(),
+      audience:chipValues('anAudience'),
+      period:`${document.getElementById('anStart').value} – ${document.getElementById('anEnd').value}`,
+    });
+    document.getElementById('anJudul').value = ''; document.getElementById('anIsi').value = '';
+    clearChips('anAudience');
+    toggleAnnounceForm(); renderAnnouncements(); toast('Pengumuman diterbitkan.');
+  });
+}
+function deleteAnnouncement(i){
+  if(!confirm(`Hapus pengumuman "${announceData[i].judul}"?`)) return;
+  announceData.splice(i,1); renderAnnouncements(); toast('Pengumuman dihapus.');
+}
+
+/* ============ INIT ============ */
+buildChips('cJenis', JENIS_SS);
+buildChips('anAudience', ['Head Office','Plant','Area','Submitter','High Superior']);
+buildChips('fltStatusChips', Object.entries(statusMeta).map(([value,m])=>({value, label:m.label})));
+buildChips('fltJenisChips', JENIS_SS);
+hydrateIcons();
+linkErrors();
+['createForm','reportForm','announceForm'].forEach(id=>wireErrorClearing(document.getElementById(id)));
+renderLBTabs();
+setRole('submitter');
+</script>
+</body>
+</html>
