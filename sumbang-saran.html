@@ -34,6 +34,16 @@
     --text-subtle:#5F6B7A;    /* secondary meta, >= 4.5:1 on white and --bg */
     --placeholder:#6B7280;
 
+    /* brand accent — ONLY the main "create/submit" action per screen + achievement */
+    --accent:#F0A527; --accent-2:#F7BE55; --accent-edge:#D98E14; --on-accent:#241A05;
+    --accent-glow:0 8px 20px rgba(240,165,39,.30);
+
+    /* identity tints for navigation tiles (not status) */
+    --tint-blue-bg:#E6EEFD;   --tint-blue-fg:#1D4ED8;
+    --tint-green-bg:#E3F4EE;  --tint-green-fg:#0B6E55;
+    --tint-violet-bg:#EFE9FC; --tint-violet-fg:#6232C0;
+    --tint-amber-bg:#FDF1D8;  --tint-amber-fg:#92400E;
+
     /* interactive */
     --primary:var(--navy-900);
     --primary-hover:var(--navy-800);
@@ -91,7 +101,12 @@
   html,body{margin:0;padding:0;}
   body{
     font-family:var(--font-body); font-size:var(--fs-body); line-height:1.5;
-    background:var(--bg); color:var(--text);
+    background:
+      radial-gradient(900px 520px at 100% -10%, rgba(240,165,39,.10), transparent 60%),
+      radial-gradient(800px 600px at -10% 20%, rgba(37,99,235,.08), transparent 60%),
+      var(--bg);
+    background-attachment:fixed;
+    color:var(--text);
     -webkit-font-smoothing:antialiased; min-height:100vh;
     font-variant-numeric:tabular-nums;
   }
@@ -123,7 +138,10 @@
   .login-brand-top .name{font-family:var(--font-display); font-weight:600; font-size:var(--fs-20); line-height:1.2;}
   .login-brand-top .name small{display:block; font-family:var(--font-body); font-weight:500; font-size:var(--fs-12); color:#B7C3DA; letter-spacing:.04em; text-transform:uppercase;}
   .login-hero{position:relative; margin-top:auto; max-width:460px;}
-  .login-hero .eyebrow{font-size:var(--fs-12); font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:#F5C46B; margin-bottom:var(--sp-3);}
+  .login-hero .eyebrow{display:flex; align-items:center; gap:8px; font-size:var(--fs-12); font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:#F5C46B; margin-bottom:var(--sp-3);}
+  .live-dot{width:8px; height:8px; border-radius:50%; background:#5FC4EE; animation:pulseDot 1.8s infinite;}
+  @keyframes pulseDot{0%{box-shadow:0 0 0 0 rgba(95,196,238,.55);} 70%{box-shadow:0 0 0 8px rgba(95,196,238,0);} 100%{box-shadow:0 0 0 0 rgba(95,196,238,0);}}
+  .login-brand::after{content:""; position:absolute; top:-120px; left:-80px; width:420px; height:420px; border-radius:50%; background:radial-gradient(circle, rgba(240,165,39,.28), transparent 65%); pointer-events:none;}
   .login-hero h1{font-size:var(--fs-32); font-weight:700; margin-bottom:var(--sp-3);}
   .login-hero p{font-size:var(--fs-14); color:#C3CCDD; line-height:1.65; margin:0 0 var(--sp-6);}
   .login-stats{position:relative; display:flex; gap:var(--sp-6); flex-wrap:wrap;}
@@ -155,9 +173,14 @@
   .app-shell{display:grid; grid-template-columns:248px 1fr; min-height:100vh; gap:var(--sp-4); padding:var(--sp-4);}
 
   .sidebar{
-    background:var(--navy-950); border-radius:var(--r-lg); color:#fff; padding:var(--sp-5) var(--sp-3);
+    background:linear-gradient(180deg, #0E2B4F 0%, var(--navy-950) 55%); border-radius:var(--r-lg); color:#fff; padding:var(--sp-5) var(--sp-3);
+    overflow:hidden; box-shadow:0 16px 40px rgba(8,28,51,.22);
     display:flex; flex-direction:column; position:sticky; top:var(--sp-4); height:calc(100vh - 32px);
   }
+  .sidebar::before{content:""; position:absolute; inset:0; pointer-events:none;
+    background:radial-gradient(260px 200px at 90% 0%, rgba(240,165,39,.16), transparent 70%),
+               radial-gradient(rgba(255,255,255,.05) 1px, transparent 1px) 0 0/22px 22px;}
+  .sidebar > *{position:relative;}
   .brand{display:flex; align-items:center; gap:10px; padding:4px 8px 20px;}
   .brand .logo-mark{width:36px; height:36px; padding:6px; border-radius:var(--r-sm);}
   .brand-name{font-family:var(--font-display); font-weight:600; font-size:var(--fs-16); line-height:1.2;}
@@ -169,8 +192,9 @@
     transition:background var(--dur-fast) ease, color var(--dur-fast) ease;
   }
   .nav-item:hover{background:rgba(255,255,255,.07); color:#fff;}
-  .nav-item[aria-current="page"]{background:#15345A; color:#fff; font-weight:600;}
-  .nav-item[aria-current="page"]::before{content:""; position:absolute; left:0; top:10px; bottom:10px; width:3px; border-radius:3px; background:#7FB2F5;}
+  .nav-item[aria-current="page"]{background:linear-gradient(90deg, rgba(240,165,39,.20), rgba(240,165,39,.04)); color:#fff; font-weight:600; box-shadow:inset 0 0 0 1px rgba(240,165,39,.28);}
+  .nav-item[aria-current="page"] svg.ic{color:var(--accent);}
+  .nav-item[aria-current="page"]::before{content:""; position:absolute; left:0; top:10px; bottom:10px; width:3px; border-radius:3px; background:var(--accent); box-shadow:0 0 10px rgba(240,165,39,.6);}
   .nav-item .badge{margin-left:auto; min-width:22px; height:22px; padding:0 7px; border-radius:var(--r-pill); background:#fff; color:var(--navy-950); font-size:var(--fs-12); font-weight:700; display:inline-flex; align-items:center; justify-content:center;}
   .sidebar-footer{margin-top:auto; padding-top:var(--sp-3); border-top:1px solid rgba(255,255,255,.1);}
   .role-note{font-size:var(--fs-12); color:#B7C3DA; padding:var(--sp-2) 10px 0;}
@@ -213,7 +237,7 @@
   .grid-3{grid-template-columns:repeat(3, minmax(0,1fr));}
   .grid-4{grid-template-columns:repeat(4, minmax(0,1fr));}
   .section-title{font-size:var(--fs-16); font-weight:600; display:flex; align-items:center; gap:var(--sp-2);}
-  .section-title svg.ic{color:var(--text-muted);}
+  .section-title svg.ic{color:var(--navy-700);}
   .section-sub{font-size:var(--fs-14); color:var(--text-muted); margin:2px 0 var(--sp-4);}
   .stack-gap{margin-top:var(--sp-4);}
 
@@ -228,6 +252,10 @@
   .btn:hover{background:var(--surface-sunken);}
   .btn-primary{background:var(--primary); border-color:var(--primary); color:var(--on-primary);}
   .btn-primary:hover{background:var(--primary-hover); border-color:var(--primary-hover);}
+  .btn-primary{background:linear-gradient(180deg, #154476, var(--navy-900));}
+  .btn-primary:hover{box-shadow:0 6px 16px rgba(13,50,96,.28);}
+  .btn-accent{background:linear-gradient(135deg, var(--accent-2), var(--accent)); border-color:var(--accent-edge); color:var(--on-accent); box-shadow:var(--accent-glow);}
+  .btn-accent:hover{background:linear-gradient(135deg, #F9C868, #F2AE38); color:var(--on-accent);}
   .btn-success{background:var(--st-approved-fg); border-color:var(--st-approved-fg); color:#fff;}
   .btn-success:hover{background:#085A45;}
   .btn-warn{color:var(--st-revise-fg); border-color:#EDB9A3;}
@@ -304,7 +332,7 @@
   .banner.warn{background:var(--st-revise-bg); border-color:#F5CDBB;} .banner.warn .b-ic{background:#F8D5C5; color:var(--st-revise-fg);} .banner.warn .t{color:#8A2A0F;}
   .banner.danger{background:var(--st-rejected-bg); border-color:#F3C6C1;} .banner.danger .b-ic{background:#F6D0CC; color:var(--st-rejected-fg);} .banner.danger .t{color:#8F1D14;}
   .banner.success{background:var(--st-approved-bg); border-color:#C3E6D9;} .banner.success .b-ic{background:#C9EADD; color:var(--st-approved-fg);} .banner.success .t{color:#084D3B;}
-  .banner.done{background:var(--st-done-bg); border-color:#F2D9A6;} .banner.done .b-ic{background:#F7E0B0; color:var(--st-done-fg);} .banner.done .t{color:#78350F;}
+  .banner.done{background:linear-gradient(120deg, #FFF8E8, var(--st-done-bg)); border-color:#F2D9A6; box-shadow:0 6px 18px rgba(240,165,39,.14);} .banner.done .b-ic{background:#F7E0B0; color:var(--st-done-fg);} .banner.done .t{color:#78350F;}
   .banner.neutral{background:var(--surface-sunken); border-color:var(--border);} .banner.neutral .b-ic{background:#E7EBF1; color:var(--text-muted);}
 
   /* ===================== REVIEW PANEL ===================== */
@@ -351,22 +379,37 @@
   .chat-input .input{flex:1;}
 
   /* ===================== DASHBOARD ===================== */
-  .hero{border-radius:var(--r-lg); padding:var(--sp-6) var(--sp-8); background:linear-gradient(120deg, var(--navy-950), var(--navy-800)); color:#fff; margin-bottom:var(--sp-4); display:flex; justify-content:space-between; align-items:center; gap:var(--sp-5); flex-wrap:wrap;}
+  .hero{position:relative; overflow:hidden; border-radius:var(--r-lg); padding:var(--sp-8); background:linear-gradient(120deg, var(--navy-950), var(--navy-900) 55%, var(--navy-800)); color:#fff; box-shadow:0 16px 40px rgba(8,28,51,.22); margin-bottom:var(--sp-4); display:flex; justify-content:space-between; align-items:center; gap:var(--sp-5); flex-wrap:wrap;}
   .hero h1{font-size:var(--fs-24); font-weight:700; margin-bottom:var(--sp-1);}
   .hero p{color:#C3CCDD; margin:0; max-width:48ch;}
-  .hero .btn{background:#fff; color:var(--navy-950); border-color:#fff;}
-  .hero .btn:hover{background:#E8EEF7;}
+  .hero::before{content:""; position:absolute; top:-140px; right:-60px; width:380px; height:380px; border-radius:50%; background:radial-gradient(circle, rgba(240,165,39,.35), transparent 65%); pointer-events:none;}
+  .hero::after{content:""; position:absolute; inset:0; pointer-events:none; background:radial-gradient(rgba(255,255,255,.06) 1px, transparent 1px) 0 0/22px 22px; -webkit-mask-image:linear-gradient(90deg, transparent 30%, #000); mask-image:linear-gradient(90deg, transparent 30%, #000);}
+  .hero > *{position:relative; z-index:1;}
+  .hero-deco{position:absolute !important; right:210px; bottom:-34px; width:150px; height:150px; color:rgba(255,255,255,.07); z-index:0 !important; pointer-events:none;}
+  .hero-deco svg.ic{width:100%; height:100%; stroke-width:1.2;}
+  .hero-chips{display:flex; flex-wrap:wrap; gap:var(--sp-2); margin-top:var(--sp-4);}
+  .hero-chip{display:inline-flex; align-items:center; gap:6px; font-size:var(--fs-12); font-weight:600; padding:5px 10px; border-radius:var(--r-pill); background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.16); color:#fff; text-decoration:none;}
+  .hero-chip b{color:var(--accent-2);}
+  .hero .btn-accent{min-height:48px; padding:0 var(--sp-5); font-size:var(--fs-16);}
 
   .quick-tiles{display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:var(--sp-3); margin-bottom:var(--sp-4);}
   .tile{background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:var(--sp-4); display:flex; align-items:center; gap:var(--sp-3); text-align:left; transition:border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;}
   .tile:hover{border-color:var(--border-strong); box-shadow:var(--shadow-md);}
   .tile .t-ic{width:40px; height:40px; border-radius:var(--r-md); background:#EDF2FA; color:var(--navy-800); display:flex; align-items:center; justify-content:center; flex:none;}
   .tile .t-ic svg.ic{width:20px; height:20px;}
+  .t-ic.blue{background:var(--tint-blue-bg); color:var(--tint-blue-fg);}
+  .t-ic.green{background:var(--tint-green-bg); color:var(--tint-green-fg);}
+  .t-ic.violet{background:var(--tint-violet-bg); color:var(--tint-violet-fg);}
+  .t-ic.amber{background:var(--tint-amber-bg); color:var(--tint-amber-fg);}
   .tile .lbl{font-weight:600; display:block;}
   .tile .sub{font-size:var(--fs-12); color:var(--text-subtle);}
 
   .stat-row{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:var(--sp-3); margin-bottom:var(--sp-4);}
-  .stat{background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:var(--sp-4) var(--sp-5);}
+  .stat{position:relative; overflow:hidden; background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:var(--sp-4) var(--sp-5); display:flex; align-items:center; gap:var(--sp-3);}
+  .stat::after{content:""; position:absolute; right:-30px; bottom:-30px; width:90px; height:90px; border-radius:50%; background:var(--stat-glow, transparent); opacity:.55;}
+  .stat .t-ic{width:44px; height:44px; border-radius:var(--r-md); display:flex; align-items:center; justify-content:center; flex:none;}
+  .stat .t-ic svg.ic{width:22px; height:22px;}
+  .stat.s-blue{--stat-glow:var(--tint-blue-bg);} .stat.s-green{--stat-glow:var(--tint-green-bg);} .stat.s-amber{--stat-glow:var(--tint-amber-bg);}
   .stat .lbl{font-size:var(--fs-14); color:var(--text-muted); font-weight:500;}
   .stat .num{font-size:var(--fs-24); font-weight:700; line-height:1.2; margin-top:2px;}
 
@@ -382,7 +425,10 @@
   .scope-banner b{color:var(--text);}
 
   .kpi-row{display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:var(--sp-3); margin-bottom:var(--sp-4);}
-  .kpi{background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:var(--sp-4);}
+  .kpi{position:relative; overflow:hidden; background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:var(--sp-4) var(--sp-4) var(--sp-4) calc(var(--sp-4) + 4px);}
+  .kpi::before{content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--kpi-rail, var(--navy-800));}
+  .kpi:nth-child(4n+1){--kpi-rail:var(--tint-blue-fg);} .kpi:nth-child(4n+2){--kpi-rail:var(--tint-violet-fg);}
+  .kpi:nth-child(4n+3){--kpi-rail:var(--tint-green-fg);} .kpi:nth-child(4n+4){--kpi-rail:var(--accent);}
   .kpi .label{font-size:var(--fs-14); color:var(--text-muted); font-weight:500;}
   .kpi .value-row{display:flex; align-items:flex-end; justify-content:space-between; gap:var(--sp-2); margin-top:2px;}
   .kpi .value{font-size:var(--fs-24); font-weight:700; line-height:1.2;}
@@ -469,7 +515,7 @@
   .bn-item[aria-current="page"]{color:var(--primary);}
   .bn-item[aria-current="page"] svg.ic{stroke-width:2.4;}
   .bn-item .bn-count{position:absolute; top:2px; right:8px; min-width:18px; height:18px; padding:0 5px; border-radius:var(--r-pill); background:var(--primary); color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;}
-  .bn-item.primary .bn-fab{width:44px; height:44px; border-radius:var(--r-md); background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; margin-top:-18px; box-shadow:var(--shadow-md);}
+  .bn-item.primary .bn-fab{width:48px; height:48px; border-radius:15px; background:linear-gradient(135deg, var(--accent-2), var(--accent)); color:var(--on-accent); box-shadow:var(--accent-glow); display:flex; align-items:center; justify-content:center; margin-top:-18px; box-shadow:var(--shadow-md);}
 
   .more-backdrop{display:none; position:fixed; inset:0; background:rgba(8,12,22,.45); z-index:var(--z-overlay);}
   .more-backdrop.open{display:block;}
@@ -519,7 +565,8 @@
     .grid-2, .grid-3, .grid-4{grid-template-columns:minmax(0,1fr);}
     .quick-tiles{grid-template-columns:repeat(2, minmax(0,1fr));}
     .row-2, .row-3{grid-template-columns:minmax(0,1fr);}
-    .hero{padding:var(--sp-5);}
+    .hero{padding:var(--sp-6) var(--sp-5);}
+    .hero-deco{display:none;}
     .hero .btn{width:100%;}
     .banner{flex-wrap:wrap;}
     .banner > .btn{width:100%;}
@@ -536,7 +583,8 @@
   @media (min-width:901px){ .bottom-nav, .more-sheet, .more-backdrop{display:none !important;} }
   @media (max-width:480px){
     .kpi-row{grid-template-columns:minmax(0,1fr);}
-    .stat{padding:var(--sp-3);}
+    .stat{padding:var(--sp-3); flex-direction:column; align-items:flex-start; gap:var(--sp-2);}
+    .stat .t-ic{width:36px; height:36px;}
     .stat .lbl{font-size:var(--fs-12);}
     .stat .num{font-size:var(--fs-20);}
     .tile{flex-direction:column; align-items:flex-start; gap:var(--sp-2);}
@@ -571,7 +619,7 @@
       <div class="name">Sumbang Saran<small>Paragon Group</small></div>
     </div>
     <div class="login-hero">
-      <div class="eyebrow">Continuous Improvement Platform</div>
+      <div class="eyebrow"><span class="live-dot" aria-hidden="true"></span>Continuous Improvement Platform</div>
       <h1>Satu ide kecil bisa jadi perbaikan besar.</h1>
       <p>Ajukan, pantau, dan wujudkan ide perbaikanmu — mulai dari submission, review berjenjang, hingga rekognisi Best SS dan reward, semua dalam satu platform.</p>
       <div class="login-stats">
@@ -603,7 +651,7 @@
           <label class="check-label"><input type="checkbox" checked> Ingat saya</label>
           <a href="#">Lupa password?</a>
         </div>
-        <button type="submit" class="btn btn-primary btn-block">Masuk <i data-icon="arrow-right"></i></button>
+        <button type="submit" class="btn btn-accent btn-block">Masuk <i data-icon="arrow-right"></i></button>
         <div class="login-divider">atau</div>
         <button type="button" class="btn btn-block" onclick="doLogin('submitter')"><i data-icon="lock"></i> Masuk dengan SSO Paracorp</button>
       </form>
@@ -671,24 +719,30 @@
 
         <div id="dash-simple">
           <div class="hero">
+            <span class="hero-deco" aria-hidden="true"><i data-icon="lightbulb"></i></span>
             <div>
               <h2 id="greetText">Selamat pagi, Dewi</h2>
               <p>Setiap ide kecil yang kamu ajukan bisa berdampak besar untuk tim. Mengajukan ide butuh kurang dari 3 menit.</p>
+              <div class="hero-chips">
+                <span class="hero-chip"><i data-icon="alert"></i><b id="heroTodo">3</b> perlu tindakan</span>
+                <span class="hero-chip"><i data-icon="trophy"></i>Peringkat <b>#44</b></span>
+                <span class="hero-chip"><i data-icon="award"></i><b>3</b> ide diterapkan</span>
+              </div>
             </div>
-            <button class="btn" onclick="go('create')"><i data-icon="lightbulb"></i> Ajukan Ide Baru</button>
+            <button class="btn btn-accent" onclick="go('create')"><i data-icon="lightbulb"></i> Ajukan Ide Baru</button>
           </div>
 
           <div class="quick-tiles">
-            <button class="tile" onclick="go('create')"><span class="t-ic"><i data-icon="file-plus"></i></span><span><span class="lbl">Ajukan Ide</span><span class="sub">Buat SS baru</span></span></button>
-            <button class="tile" onclick="go('list')"><span class="t-ic"><i data-icon="list"></i></span><span><span class="lbl">Ide Saya</span><span class="sub" id="tileListSub">12 pengajuan</span></span></button>
-            <button class="tile" onclick="go('leaderboard')"><span class="t-ic"><i data-icon="trophy"></i></span><span><span class="lbl">Leaderboard</span><span class="sub">Peringkat #44</span></span></button>
-            <button class="tile" onclick="go('learning')"><span class="t-ic"><i data-icon="megaphone"></i></span><span><span class="lbl">Pengumuman</span><span class="sub">3 info baru</span></span></button>
+            <button class="tile" onclick="go('create')"><span class="t-ic amber"><i data-icon="file-plus"></i></span><span><span class="lbl">Ajukan Ide</span><span class="sub">Buat SS baru</span></span></button>
+            <button class="tile" onclick="go('list')"><span class="t-ic blue"><i data-icon="list"></i></span><span><span class="lbl">Ide Saya</span><span class="sub" id="tileListSub">12 pengajuan</span></span></button>
+            <button class="tile" onclick="go('leaderboard')"><span class="t-ic violet"><i data-icon="trophy"></i></span><span><span class="lbl">Leaderboard</span><span class="sub">Peringkat #44</span></span></button>
+            <button class="tile" onclick="go('learning')"><span class="t-ic green"><i data-icon="megaphone"></i></span><span><span class="lbl">Pengumuman</span><span class="sub">3 info baru</span></span></button>
           </div>
 
           <div class="stat-row">
-            <div class="stat"><div class="lbl">Ide diajukan</div><div class="num">12</div></div>
-            <div class="stat"><div class="lbl">Disetujui</div><div class="num">7</div></div>
-            <div class="stat"><div class="lbl">Diterapkan</div><div class="num">3</div></div>
+            <div class="stat s-blue"><span class="t-ic blue"><i data-icon="send"></i></span><div><div class="lbl">Ide diajukan</div><div class="num">12</div></div></div>
+            <div class="stat s-green"><span class="t-ic green"><i data-icon="check-circle"></i></span><div><div class="lbl">Disetujui</div><div class="num">7</div></div></div>
+            <div class="stat s-amber"><span class="t-ic amber"><i data-icon="award"></i></span><div><div class="lbl">Diterapkan</div><div class="num">3</div></div></div>
           </div>
 
           <div class="grid grid-2">
@@ -805,7 +859,7 @@
 
           <div class="form-actions">
             <button type="button" class="btn btn-ghost" onclick="toast('Draf disimpan (simulasi).')">Simpan Draf</button>
-            <button type="submit" class="btn btn-primary">Submit untuk Review Superior <i data-icon="arrow-right"></i></button>
+            <button type="submit" class="btn btn-accent">Submit untuk Review Superior <i data-icon="arrow-right"></i></button>
           </div>
         </form>
       </section>
@@ -982,9 +1036,9 @@
           <h2 class="section-title"><i data-icon="package"></i> Jenis export</h2>
           <p class="section-sub">Format file menyesuaikan jenis data</p>
           <div class="grid grid-3" role="radiogroup" aria-label="Jenis export" id="exportTypeCards">
-            <button type="button" class="type-card" role="radio" aria-checked="true" data-type="submit" onclick="selectExportType('submit')"><span class="t-ic"><i data-icon="table"></i></span><span class="lbl">Data Submit SS</span><span class="sub">Excel &amp; CSV · seluruh field SS sesuai filter</span></button>
-            <button type="button" class="type-card" role="radio" aria-checked="false" data-type="report" onclick="selectExportType('report')"><span class="t-ic"><i data-icon="file-text"></i></span><span class="lbl">Laporan Implementasi</span><span class="sub">PDF per SS ID · bulk download (khusus status Implemented)</span></button>
-            <button type="button" class="type-card" role="radio" aria-checked="false" data-type="leaderboard" onclick="selectExportType('leaderboard')"><span class="t-ic"><i data-icon="trophy"></i></span><span class="lbl">Analisis Leaderboard</span><span class="sub">Excel &amp; CSV · ranking &amp; skor per kategori</span></button>
+            <button type="button" class="type-card" role="radio" aria-checked="true" data-type="submit" onclick="selectExportType('submit')"><span class="t-ic blue"><i data-icon="table"></i></span><span class="lbl">Data Submit SS</span><span class="sub">Excel &amp; CSV · seluruh field SS sesuai filter</span></button>
+            <button type="button" class="type-card" role="radio" aria-checked="false" data-type="report" onclick="selectExportType('report')"><span class="t-ic amber"><i data-icon="file-text"></i></span><span class="lbl">Laporan Implementasi</span><span class="sub">PDF per SS ID · bulk download (khusus status Implemented)</span></button>
+            <button type="button" class="type-card" role="radio" aria-checked="false" data-type="leaderboard" onclick="selectExportType('leaderboard')"><span class="t-ic violet"><i data-icon="trophy"></i></span><span class="lbl">Analisis Leaderboard</span><span class="sub">Excel &amp; CSV · ranking &amp; skor per kategori</span></button>
           </div>
         </div>
 
@@ -1387,6 +1441,7 @@ function renderSimpleHome(){
       ${pill(r.status)}
     </button>`;
   const todo = ssRecords.filter(r=>needsSubmitterAction(r.status));
+  document.getElementById('heroTodo').textContent = todo.length;
   document.getElementById('todoList').innerHTML = todo.length ? todo.map(item).join('') : `<div class="empty-note">Tidak ada yang perlu ditindaklanjuti. Mantap!</div>`;
   document.getElementById('miniSSList').innerHTML = ssRecords.slice(0,3).map(item).join('');
 }
