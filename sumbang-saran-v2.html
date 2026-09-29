@@ -846,6 +846,10 @@
   .faq p{margin:0 0 var(--sp-3); color:var(--text-muted);}
 
   .lb-score{width:auto; min-width:64px; white-space:nowrap;}
+  /* button colour rule: orange ONLY on the dark hero; navy everywhere else */
+  .bn-item.primary .bn-fab{background:var(--primary); color:#fff; box-shadow:0 6px 16px rgba(13,50,96,.3);}
+  .btn-accent:hover{background:linear-gradient(135deg, #F2AE38, #D98E14); border-color:#B8760E; color:var(--on-accent); box-shadow:0 10px 24px rgba(240,165,39,.45); transform:translateY(-1px);}
+  @media (prefers-reduced-motion:reduce){ .btn-accent:hover{transform:none;} }
   .demo-footnote{font-size:var(--fs-12); color:var(--text-subtle); text-align:center; margin-top:var(--sp-6);}
 
   @media (max-width:900px){
@@ -891,7 +895,7 @@
     <div class="login-form-wrap">
       <h2>Masuk ke Sumbang Saran</h2>
       <p class="sub">Karyawan dengan akun Paracorp masuk lewat SSO — tidak perlu password terpisah.</p>
-      <button type="button" class="btn btn-accent btn-block" onclick="doLogin('submitter')"><i data-icon="lock"></i> Masuk dengan SSO Paracorp</button>
+      <button type="button" class="btn btn-primary btn-block" onclick="doLogin('submitter')"><i data-icon="lock"></i> Masuk dengan SSO Paracorp</button>
       <div class="login-divider">tidak punya akun Paracorp?</div>
       <details class="collapse" style="margin-bottom:0;">
         <summary><i data-icon="user"></i> Masuk dengan email &amp; password MDP</summary>
@@ -1444,7 +1448,6 @@ function renderNav(active){
   const rootActive = active==='idea' ? (S.role==='submitter'?'ideas':S.role==='superior'?'queue':'monitor') : (ROUTE_ROOT[active] || active);
   const items = NAV[S.role];
   document.getElementById('sideNav').innerHTML =
-    (S.role==='submitter' ? `<button class="btn btn-accent sidebar-cta" onclick="go('create')">${icon('plus')} Ajukan Ide</button>` : '') +
     `<div class="nav-section-label">Menu</div>` +
     items.map(([r,l,ic,b])=>{ const n = b ? badgeCount(r) : 0; return `<button class="nav-item" ${r===rootActive?'aria-current="page"':''} onclick="go('${r}')">${icon(ic)}<span>${l}</span>${n?`<span class="badge" aria-label="${n} perlu aksi">${n}</span>`:''}</button>`; }).join('');
   document.getElementById('bottomNav').innerHTML = BOTTOM[S.role].map(([r,l,ic,k])=>{
@@ -1699,7 +1702,7 @@ VIEWS.ideas = (_, q) => {
   const count = k => k==='semua' ? recs.length : recs.filter(r=>G[k].includes(r.status)).length;
   return `
     <div class="page-head"><div><h1 class="page-title">Ide Saya</h1><p class="page-sub">Semua ide yang pernah Anda ajukan, dikelompokkan berdasarkan siapa yang perlu bertindak.</p></div>
-      <button class="btn btn-accent" onclick="go('create')">${icon('plus')} Ajukan Ide</button></div>
+      <button class="btn btn-primary" onclick="go('create')">${icon('plus')} Ajukan Ide</button></div>
     ${tabsHTML([['aksi','Perlu aksi Anda',count('aksi')],['jalan','Diproses Superior',count('jalan')],['selesai','Selesai',count('selesai')],['semua','Semua',count('semua')]], tab, 'ideas')}
     <div class="toolbar"><div class="search">${icon('search')}<label class="sr-only" for="q">Cari ide</label><input class="input" id="q" type="search" placeholder="Cari judul atau SS ID…" value="${esc(q.q||'')}"></div></div>
     <div class="card"><div class="ss-list" id="listBox"></div></div>`;
@@ -1746,10 +1749,10 @@ const photosHTML = (n, after) => `<div class="photos">${Array.from({length:n},(_
 function actionPanel(r){
   const i = r.id, s = r.status, sup = person(r.superior).name;
   if(S.role==='submitter') return {
-    draft: ()=>banner('neutral','file-text','Draf belum dikirim','Lengkapi dan kirim agar Superior bisa mereview.', `<a class="btn btn-sm btn-accent cta" href="#/edit/${i}">${icon('pencil')} Lanjutkan draf</a>`),
+    draft: ()=>banner('neutral','file-text','Draf belum dikirim','Lengkapi dan kirim agar Superior bisa mereview.', `<a class="btn btn-sm btn-primary cta" href="#/edit/${i}">${icon('pencil')} Lanjutkan draf</a>`),
     submitted: ()=>banner('info','clock',`Menunggu review ${esc(sup)}`, `Diajukan ${ago(waitSince(r))}. Target keputusan maks. ${SLA} hari (${fShort(addDays(waitSince(r),SLA))}). Anda akan mendapat notifikasi.`),
     revise_idea: ()=>banner('warn','pencil','Superior meminta revisi','Perbaiki sesuai catatan di atas, lalu kirim ulang. Isian sebelumnya sudah terisi otomatis.', `<a class="btn btn-sm btn-primary cta" href="#/edit/${i}">${icon('pencil')} Revisi ide</a>`),
-    approved: ()=>banner('success','check-circle','Disetujui — saatnya implementasi', `Terapkan idenya lalu kirim laporan sebelum <b>${fDate(dueAt(r))}</b> (${days(TODAY,dueAt(r))} hari lagi). Laporan berisi foto after dan perbandingan sebelum/sesudah.`, `<a class="btn btn-sm btn-accent cta" href="#/report/${i}">${icon('upload')} Kirim laporan implementasi</a>`),
+    approved: ()=>banner('success','check-circle','Disetujui — saatnya implementasi', `Terapkan idenya lalu kirim laporan sebelum <b>${fDate(dueAt(r))}</b> (${days(TODAY,dueAt(r))} hari lagi). Laporan berisi foto after dan perbandingan sebelum/sesudah.`, `<a class="btn btn-sm btn-primary cta" href="#/report/${i}">${icon('upload')} Kirim laporan implementasi</a>`),
     review_report: ()=>banner('info','search',`Laporan sedang direview ${esc(sup)}`, `Dikirim ${ago(r.reportAt)}. Target keputusan ${fShort(addDays(r.reportAt,SLA))}.`),
     revise_report: ()=>banner('warn','pencil','Laporan perlu direvisi','Perbaiki sesuai catatan di atas. Isian laporan sebelumnya sudah terisi otomatis.', `<a class="btn btn-sm btn-primary cta" href="#/report/${i}">${icon('pencil')} Revisi laporan</a>`),
     rejected: ()=>banner('danger','x-circle','Ide ini tidak dilanjutkan', `Alasan dari ${esc(sup)} ada di atas. Masalahnya tetap bisa diangkat dengan pendekatan lain.`, `<a class="btn btn-sm cta" href="#/create?from=${i}">${icon('lightbulb')} Ajukan ide baru dari masalah ini</a>`),
@@ -1945,7 +1948,7 @@ function ideaForm(r, mode, from){
       ${uploadHTML('fPhoto', r?.photosBefore ? 'Tambah foto before' : 'Foto kondisi saat ini', false, '— sangat membantu Superior memahami masalah')}
       <div class="form-actions">
         <button type="button" class="btn btn-ghost" onclick="saveDraft('${r?.id||''}')">Simpan draf</button>
-        <button type="submit" class="btn btn-accent">${mode==='edit' && r.status==='revise_idea' ? 'Kirim ulang ke Superior' : 'Kirim ke Superior'} ${icon('arrow-right')}</button>
+        <button type="submit" class="btn btn-primary">${mode==='edit' && r.status==='revise_idea' ? 'Kirim ulang ke Superior' : 'Kirim ke Superior'} ${icon('arrow-right')}</button>
       </div>
     </form>`;
 }
@@ -2055,7 +2058,7 @@ VIEWS.report = (id) => {
       <div class="field" data-required style="max-width:260px;"><label for="rDone">Tanggal selesai <span class="req">*</span></label><input type="date" class="input" id="rDone" max="${toISO(TODAY)}" value="${rep.doneAt ? toISO(rep.doneAt) : toISO(TODAY)}">${errHTML('Wajib diisi.')}</div>
       <div class="form-actions">
         <a class="btn btn-ghost" href="#/idea/${r.id}">Batal</a>
-        <button type="submit" class="btn btn-accent">Kirim laporan ke Superior ${icon('arrow-right')}</button>
+        <button type="submit" class="btn btn-primary">Kirim laporan ke Superior ${icon('arrow-right')}</button>
       </div>
     </form>`;
 };
@@ -2092,7 +2095,7 @@ VIEWS.points = () => {
         ${rewards.length ? `<div class="scroll-x">${tableHTML(['Ide','Reward','Status'], rewards.map(r=>[`<a href="#/idea/${r.id}">${esc(r.title)}</a>`, rp(r.reward.rp), r.reward.paid?`<span class="tag ok">Cair ${fShort(r.reward.paidAt)}</span>`:`<span class="tag info">Diproses</span>`]))}</div>` : emptyState('coins','Belum ada reward','Reward diberikan saat ide Anda Implemented.')}
       </div>
       <div class="card card-pad"><h2 class="section-title">${icon('clock')} Riwayat poin</h2><p class="section-sub">Terbaru di atas</p>
-        ${ev.length ? `<ol class="timeline stack-gap">${ev.map(e=>`<li class="tone-${e.text==='Implemented'?'done':''}"><div><b>+${e.pts}</b> · ${e.text} — <a href="#/idea/${e.r.id}">${esc(e.r.title)}</a></div><div class="when">${fDate(e.at)}</div></li>`).join('')}</ol>` : emptyState('trophy','Belum ada poin',`Ajukan ide pertama untuk mendapat +${POINTS.submit} poin.`, `<a class="btn btn-accent" href="#/create">Ajukan ide</a>`)}
+        ${ev.length ? `<ol class="timeline stack-gap">${ev.map(e=>`<li class="tone-${e.text==='Implemented'?'done':''}"><div><b>+${e.pts}</b> · ${e.text} — <a href="#/idea/${e.r.id}">${esc(e.r.title)}</a></div><div class="when">${fDate(e.at)}</div></li>`).join('')}</ol>` : emptyState('trophy','Belum ada poin',`Ajukan ide pertama untuk mendapat +${POINTS.submit} poin.`, `<a class="btn btn-primary" href="#/create">Ajukan ide</a>`)}
       </div>
     </div>`;
 };
